@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monetary State | Global Interface</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        /* BASE SYSTEM STYLES */
+        body { 
+            margin: 0; 
+            background: #000; 
+            color: #00ff41; 
+            font-family: 'Courier New', monospace; 
+            overflow: hidden; 
+        }
+
+        /* MENU SCREEN */
+        #menu-screen { 
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            text-align: center; 
+            background: radial-gradient(circle, #001a00 0%, #000 100%); 
+            z-index: 3000; 
+            position: absolute; 
+            width: 100%; 
+        }
+        #main-title { 
+            letter-spacing: 20px; 
+            font-size: 5em; 
+            text-shadow: 0 0 25px #00ff41; 
+            margin: 0; 
+            animation: pulse 2s infinite alternate; 
+        }
+        @keyframes pulse { 
+            from { opacity: 0.8; text-shadow: 0 0 10px #00ff41; } 
+            to { opacity: 1; text-shadow: 0 0 30px #00ff41; } 
+        }
+        
+        #credits-container { 
+            margin-top: 40px; 
+            color: #00ff41; 
+            line-height: 1.8; 
+            border-top: 2px solid rgba(0, 255, 65, 0.5); 
+            padding-top: 30px; 
+            text-align: center; 
+        }
+        .credit-header { font-size: 22px; font-weight: bold; text-decoration: underline; letter-spacing: 5px; margin-bottom: 15px; }
+        .credit-name { font-size: 20px; margin: 8px 0; letter-spacing: 2px; text-shadow: 0 0 10px rgba(0, 255, 65, 0.4); }
+
+        /* MAP INTERFACE */
+        #viewport { width: 100vw; height: 100vh; position: relative; display: none; background: #00050a; }
+        svg { width: 100%; height: 100%; cursor: grab; }
+        
+        .land { 
+            fill: #001a00; 
+            stroke: #00ff41; 
+            stroke-width: 0.4px; 
+            transition: 0.2s; 
+            cursor: pointer; 
+        }
+        .land:hover { 
+            fill: #003300; 
+            stroke-width: 0.8px; 
+            filter: drop-shadow(0 0 8px #00ff41); 
+        }
+        
+        /* CLICKABLE PINS FOR ISLANDS */
+        .territory-pin { 
+            fill: #00ff41; 
+            opacity: 0.8; 
+            filter: drop-shadow(0 0 3px #00ff41); 
+            cursor: pointer; 
+            pointer-events: all !important; 
+            transition: r 0.2s, fill 0.2s; 
+        }
+        .territory-pin:hover { fill: #fff; r: 4; }
+
+        /* LOADING SYSTEM */
+        #loading-overlay { 
+            position: fixed; 
+            top:0; left:0; 
+            width:100%; height:100%; 
+            background: black; 
+            display:none; 
+            flex-direction: column; 
+            justify-content:center; 
+            align-items:center; 
+            z-index:4000; 
+        }
+        #loading-text { letter-spacing: 8px; font-size: 2em; text-align: center; color: #00ff41; }
+
+        /* REUSABLE BUTTONS */
+        .btn { 
+            padding: 20px 40px; 
+            border: 2px solid #00ff41; 
+            background: none; 
+            color: #00ff41; 
+            cursor: pointer; 
+            font-family: inherit; 
+            margin-top: 15px; 
+            text-transform: uppercase; 
+            font-weight: bold; 
+            transition: 0.2s; 
+        }
+        .btn:hover { background: #00ff41; color: #000; }
+    </style>
+</head>
+<body>
+    <script src="game.js"></script>
+</body>
+</html>
