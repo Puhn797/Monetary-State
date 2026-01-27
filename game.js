@@ -159,7 +159,7 @@ function selectLocation(data) {
     // UI Update
     document.getElementById('country-name-small').innerText = data.name.common.toUpperCase();
     document.getElementById('country-flag').src = `https://flagcdn.com/w160/${data.cca2.toLowerCase()}.png`;
-    
+      
     // Rank Logic - Fixed rank disappearing
     const sorted = gameState.territories.slice().sort((a,b) => getEconomyValue(b) - getEconomyValue(a));
     const rank = sorted.findIndex(c => c.name.common === data.name.common) + 1;
