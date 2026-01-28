@@ -1,207 +1,266 @@
 /**
- * MONETARY STATE - STABLE BUILD
- * FIX: Robust Global Ranking & Integrated Save/Load System
+ * MONETARY STATE - THE TOTAL GLOBAL ECONOMY BUILD V1.2.6
+ * Features: Integrated Persistence (Save/Load), Top-Right Time Controller, 
+ * Initial Loading Screen, and Territory Markers.
  */
 
 let gameState = {
     playerCountry: null,
     selectedCountry: null,
     inGame: false,
+    isPaused: false,
     territories: [],
-    // Load save from browser storage
+    gameDate: new Date(2026, 0, 1),
+    gameSpeed: 1, 
+    // Check for existing save data on startup
     saveData: JSON.parse(localStorage.getItem('monetary_state_save')) || null
 };
 
-// INITIAL UI STRUCTURE
-document.body.innerHTML += `
-    <div id="loading-overlay">
-        <div id="loading-text">CONNECTING TO SATELLITES...</div>
+const realWorldData = {
+    "United States": 31821, "China": 20651, "Germany": 5328, "India": 4506, "Japan": 4464,
+    "United Kingdom": 4226, "France": 3559, "Italy": 2702, "Russia": 2509, "Canada": 2421,
+    "Brazil": 2293, "Spain": 2042, "Mexico": 2031, "Australia": 1948, "South Korea": 1937,
+    "Thailand": 561, "Vietnam": 511, "Malaysia": 505, "Philippines": 533
+};
+
+function formatMoney(valueInBillions) {
+    if (valueInBillions >= 1000) return `$${(valueInBillions / 1000).toFixed(2)} Trillion`;
+    return `$${valueInBillions.toFixed(1)} Billion`;
+}
+
+const sortedList = Object.keys(realWorldData).sort((a,b) => realWorldData[b] - realWorldData[a]);
+
+// --- INITIAL RENDER ---
+document.body.innerHTML = `
+    <div id="loading-overlay" style="display:none;">
+        <div id="loading-container">
+            <div id="loading-text">INITIALIZING GLOBAL SYSTEMS...</div>
+            <div id="loading-bar-container"><div id="loading-bar-fill"></div></div>
+        </div>
     </div>
-    <div id="menu-screen">
-        <h1 id="main-title">MONETARY STATE</h1>
-        <div id="menu-buttons" style="display:flex; flex-direction:column; gap:20px; align-items:center;">
-            <button class="btn" style="width:400px;" onclick="startSimulation(false)">NEW GAME</button>
-            
-            <div id="save-window" style="display: ${gameState.saveData ? 'block' : 'none'};">
-                <div class="save-card">
-                    <h3 style="margin-bottom:5px;">SAVED GAME: <span style="color:#fff">${gameState.saveData?.country || ''}</span></h3>
-                    <p style="margin-bottom:15px; color:#888; font-size:0.8em;">${gameState.saveData?.timestamp || ''}</p>
-                    <button class="mini-btn" style="width:100%; font-size:1.2em;" onclick="startSimulation(true)">PLAY</button>
+    
+    <div id="viewport" style="display:none;">
+        <div id="temporal-engine">
+            <div id="game-clock">JAN 01, 2026</div>
+            <div id="speed-controls">
+                <button id="pause-btn" class="time-btn" onclick="togglePause()">⏸</button>
+                <button class="time-btn" onclick="adjustSpeed(-1)">➖</button>
+                <div id="speed-meter">
+                    <div class="speed-bar active"></div><div class="speed-bar"></div>
+                    <div class="speed-bar"></div><div class="speed-bar"></div>
+                    <div class="speed-bar"></div>
                 </div>
+                <button class="time-btn" onclick="adjustSpeed(1)">➕</button>
             </div>
-        </div>
-        <div id="credits-container">
-            <div class="credit-header">DEVELOPED BY:</div>
-            <div class="credit-name">Kunanon Lerdsakunjinda (Kor) No. 2 M.3/11</div>
-            <div class="credit-name">Taweesak Poonoi (Tonkaow) No. 5 M.3/11</div>
-            <div class="credit-name">Tanaphat Prempee (Namo) No. 7 M.3/11</div>
-            <div class="credit-name">Asama Noiuthai (Puhn) No. 13 M.3/11</div>
-        </div>
-    </div>
-    <div id="viewport">
-        <div id="tactical-hud">
-            <div id="hud-header">
-                <img id="country-flag" src="" alt="Flag">
-                <div id="country-name-small">SYNCING...</div>
-            </div>
-            <div id="hud-stats">
-                <p id="money-display">💰 Economy: $---</p>
-                <p id="rank-display">🏆 Global Rank: #--</p>
-                <p id="pop-display">👥 Population: ---</p>
-            </div>
-            <div id="hud-actions">
-                <button id="random-btn" class="mini-btn" onclick="randomizeJump()">RANDOMIZE</button>
-                <button id="exit-pre-btn" class="mini-btn btn-exit" onclick="location.reload()">✖ EXIT</button>
-            </div>
-            <button id="save-exit-btn" class="mini-btn" style="display:none; width:100%; border-color:#00ff41; margin-top:10px;" onclick="saveAndExit()">💾 SAVE & EXIT</button>
         </div>
 
-        <div id="management-window">
-            <div id="manage-header">COMMAND CENTER: <span id="manage-country" style="color:#fff"></span></div>
-            <div id="manage-content">
-                <div class="stat-section">
-                    <p><strong>Inflation rate:</strong> 2.0%</p>
-                    <p><strong>Unemployment rate:</strong> 3%</p>
+        <div id="left-wing-stack">
+            <div id="tactical-hud">
+                <div id="hud-header">
+                    <img id="country-flag" src="" alt="">
+                    <div id="country-name-small">SELECT STATE</div>
                 </div>
-                <hr style="border:0; border-top:1px solid #00ff41; margin:15px 0;">
-                <div class="resource-section">
-                    <h3 style="color:#fff; text-decoration:underline;">RESOURCES</h3>
-                    <h4>Minerals & Energy</h4>
-                    <ul><li>Gas: 32% <span class="up">(+2%)</span></li><li>Oil: 22% <span class="up">(+1%)</span></li><li>Tin: 1% <span class="down">(-1%)</span></li></ul>
-                    <h4>Rock</h4>
-                    <ul><li>Gypsum: 16% <span class="up">(+3%)</span></li><li>Lignite: 41% <span class="up">(+5%)</span></li></ul>
-                    <h4>Agriculture & Marine</h4>
-                    <ul><li>Rice: 43% <span class="up">(+7%)</span></li><li>Fish: 20% <span class="up">(+6%)</span></li></ul>
+                <div id="hud-stats">
+                    <p id="money-display">💰 GDP: ---</p>
+                    <p id="rank-display">🏆 Rank: ---</p>
+                    <p id="pop-display">👥 Pop: ---</p>
+                </div>
+                <div id="hud-actions">
+                    <button id="btn-rand" class="big-neon-btn" onclick="randomizeJump()">RANDOMIZE</button>
+                    <button id="btn-exit-main" class="big-neon-btn btn-exit" onclick="location.reload()">EXIT GAME</button>
                 </div>
             </div>
-            <button class="mini-btn" style="width:100%; margin-top:10px;" onclick="closeManage()">CLOSE OVERLAY</button>
+
+            <div id="management-window" class="side-panel">
+                <h2 id="manage-country" style="color:#fff; border-bottom: 2px solid #00ff41;"></h2>
+                <div class="play-stats-block">
+                    <div class="stat-line"><span>Inflation rate:</span> <span class="val">2.0%</span></div>
+                    <div class="stat-line"><span>Unemployment rate:</span> <span class="val">3.1%</span></div>
+                </div>
+                <div id="scroll-engine">
+                    <h3 class="cat-head">RESOURCES:</h3>
+                    <ul class="res-list">
+                        <li>Natural Gas: 32% <span class="up">(+2%)</span></li>
+                        <li>Agriculture: 43% <span class="up">(+7%)</span></li>
+                        <li>Crude Oil: 22% <span class="up">(+1%)</span></li>
+                    </ul>
+                </div>
+                <button class="big-neon-btn" onclick="closeManage()">CLOSE INTERFACE</button>
+            </div>
         </div>
 
         <button id="main-action-btn" class="fixed-corner-btn" onclick="handleAction()">ENTER STATE</button>
     </div>
+
+    <div id="menu-screen">
+        <div id="menu-content">
+            <div id="version-tag">INTERACTIVE ECONOMIC GAME V1.0.0</div>
+            <h1 id="main-title">MONETARY STATE</h1>
+            <div style="display:flex; flex-direction:column; gap:15px; align-items:center;">
+                <button class="btn play-launch" onclick="startSimulation(false)">PLAY</button>
+                ${gameState.saveData ? `<button id="load-btn" class="btn play-launch" style="border-color:#00ffff; color:#00ffff;" onclick="startSimulation(true)">LOAD SAVE</button>` : ''}
+            </div>
+            <div id="credits-container">
+                <div class="credit-header">DEVELOPED BY:</div>
+                <div class="credit-name">Kunanon Lerdsakunjinda (Kor) No. 2 M.3/11</div>
+                <div class="credit-name">Taweesak Poonoi (Tonkaow) No. 5 M.3/11</div>
+                <div class="credit-name">Tanaphat Prempee (Namo) No. 7 M.3/11</div>
+                <div class="credit-name">Asama Noiuthai (Puhn) No. 13 M.3/11</div>
+            </div>
+        </div>
+    </div>
 `;
 
+// --- STYLES ---
 const style = document.createElement('style');
 style.innerHTML = `
-    #tactical-hud { position: absolute; top: 30px; left: 30px; background: rgba(0, 10, 0, 0.95); border: 2px solid #00ff41; padding: 25px; width: 350px; box-shadow: 0 0 30px rgba(0, 255, 65, 0.4); z-index: 5000; }
-    #country-flag { width: 60px; height: auto; border: 1px solid #00ff41; }
-    .territory-pin { fill: #00ff41; opacity: 0.8; filter: drop-shadow(0 0 5px #00ff41); cursor: pointer; }
-    .save-card { background: rgba(0, 20, 0, 0.9); border: 1px solid #00ff41; padding: 20px; width: 360px; box-shadow: 0 0 15px rgba(0,255,65,0.2); }
-    #management-window { position: absolute; top: 30px; left: 400px; background: rgba(0, 15, 0, 0.98); border: 2px solid #00ff41; width: 400px; max-height: 85vh; overflow-y: auto; padding: 25px; display: none; z-index: 7000; color: #00ff41; }
-    .fixed-corner-btn { position: absolute; bottom: 50px; right: 50px; padding: 20px 60px; background: rgba(0, 20, 0, 0.9); border: 2px solid #00ff41; color: #00ff41; font-family: 'Courier New', monospace; font-size: 1.8em; font-weight: bold; cursor: pointer; z-index: 6000; }
-    .mini-btn { background: none; border: 1px solid #00ff41; color: #00ff41; padding: 12px; font-family: inherit; cursor: pointer; text-transform: uppercase; }
-    .mini-btn:hover { background: #00ff41; color: #000; }
-    .btn-exit { border-color: #ff4444; color: #ff4444; }
-    .up { color: #00ff41; } .down { color: #ff4444; }
+    body { background: #000; color: #00ff41; font-family: 'Courier New', monospace; margin: 0; overflow: hidden; }
+    #menu-screen { position: fixed; inset: 0; display: flex; justify-content: center; align-items: center; background: #000; z-index: 9000; text-align: center; }
+    #main-title { font-size: 5.5em; letter-spacing: 15px; margin: 0; text-shadow: 0 0 20px #00ff41; }
+    .play-launch { width: 350px; padding: 20px; font-size: 1.8em; font-weight: bold; border: 2px solid #00ff41; color: #00ff41; background:none; cursor:pointer;}
+    .play-launch:hover { background: #00ff41; color: #000; }
+    
+    #loading-overlay { position: fixed; inset: 0; background: #000; z-index: 10000; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+    #loading-container { width: 400px; text-align: center; }
+    #loading-text { color: #00ff41; font-size: 1.2em; letter-spacing: 3px; margin-bottom: 20px; }
+    #loading-bar-container { width: 100%; height: 4px; background: #002200; border-radius: 2px; overflow: hidden; }
+    #loading-bar-fill { width: 0%; height: 100%; background: #00ff41; box-shadow: 0 0 10px #00ff41; transition: width 0.3s; }
+
+    #temporal-engine { position: absolute; top: 20px; right: 20px; background: #000; border: 3px solid #00ff41; border-radius: 15px; padding: 15px; z-index: 9000; text-align: center; display: none; }
+    #game-clock { font-size: 1.8em; font-weight: bold; margin-bottom: 10px; color: #00ff41; }
+    .time-btn { background: none; border: 2px solid #00ff41; color: #00ff41; border-radius: 5px; cursor: pointer; font-size: 1.2em; padding: 5px 10px; }
+    #speed-meter { display: flex; gap: 4px; padding: 5px; border: 1px solid #00ff41; border-radius: 4px; justify-content: center; }
+    .speed-bar { width: 8px; height: 18px; background: #003300; }
+    .speed-bar.active { background: #00ff41; }
+
+    #tactical-hud { background: #000; border: 2px solid #00ff41; padding: 25px; width: 360px; }
+    #left-wing-stack { position: absolute; top: 20px; left: 20px; z-index: 5000; }
+    .side-panel { background: #000; border: 2px solid #00ff41; padding: 25px; display: none; flex-direction: column; width: 360px; margin-top: 10px; }
+    .big-neon-btn { background: #000; border: 2px solid #00ff41; color: #00ff41; padding: 15px; width: 100%; font-family: inherit; font-weight: bold; cursor: pointer; margin-top: 10px; }
+    .fixed-corner-btn { position: absolute; bottom: 30px; right: 30px; padding: 20px 50px; border: 3px solid #00ff41; background: #000; color: #00ff41; font-family: inherit; font-weight: bold; cursor: pointer; font-size: 1.4em; z-index: 8000; }
+    
+    .land { fill: #001a00; stroke: #00ff41; stroke-width: 0.5px; cursor: pointer; }
+    .territory-pin { fill: #00ff41; cursor: pointer; filter: drop-shadow(0 0 3px #00ff41); }
 `;
 document.head.appendChild(style);
 
 let g, projection, path, svg, zoom;
 
-const nameFix = (n) => {
-    const map = { "USA": "United States", "England": "United Kingdom", "Somaliland": "Somalia", "East Timor": "Timor-Leste" };
-    return map[n] || n;
-};
-
-// Calculation to determine rank based on population and region
-function getEconomyValue(c) {
-    const regionMulti = { "Europe": 1.5, "Americas": 1.2, "Asia": 0.8, "Africa": 0.4, "Oceania": 1.1 };
-    return Math.floor((c.population * (regionMulti[c.region] || 0.5)) / 100);
-}
+// --- LOGIC FUNCTIONS ---
 
 async function startSimulation(isLoad) {
-    document.getElementById('menu-screen').style.display = 'none';
     const overlay = document.getElementById('loading-overlay');
+    const barFill = document.getElementById('loading-bar-fill');
+    document.getElementById('menu-screen').style.display = 'none';
     overlay.style.display = 'flex';
-    document.getElementById('loading-text').innerText = isLoad ? "RESTORING SAVED STATE..." : "INITIALIZING GLOBAL INTERFACE...";
-    
+
     if (!svg) {
-        svg = d3.select("#viewport").append("svg");
+        svg = d3.select("#viewport").append("svg").attr("width", "100%").attr("height", "100%");
         g = svg.append("g");
         zoom = d3.zoom().scaleExtent([1, 15]).on("zoom", (e) => g.attr("transform", e.transform));
         svg.call(zoom);
-        projection = d3.geoMercator().scale(window.innerWidth / 6.2).translate([window.innerWidth / 2, window.innerHeight / 1.5]);
+        projection = d3.geoMercator().scale(250).translate([window.innerWidth/2, window.innerHeight/1.5]);
         path = d3.geoPath().projection(projection);
-        
+
+        barFill.style.width = "40%";
         const world = await d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson");
-        const resp = await fetch('https://restcountries.com/v3.1/all?fields=name,latlng,population,cca2,region');
+        const resp = await fetch('https://restcountries.com/v3.1/all?fields=name,latlng,cca2,population');
         gameState.territories = await resp.json();
 
-        // Draw Map
-        g.selectAll("path").data(world.features).enter().append("path").attr("d", path).attr("class", "land")
-            .on("click", (e, d) => { if(!gameState.inGame) selectLocation(gameState.territories.find(t => t.name.common === nameFix(d.properties.name))); });
+        barFill.style.width = "70%";
+        g.selectAll("path").data(world.features).enter().append("path").attr("d", path)
+            .attr("class", d => d.properties.name === "Antarctica" ? "land antarctica" : "land")
+            .on("click", (e, d) => {
+                if(d.properties.name === "Antarctica" || gameState.inGame) return;
+                const c = gameState.territories.find(t => t.name.common === ({"USA":"United States"}[d.properties.name] || d.properties.name));
+                if(c) selectLocation(c);
+            });
 
-        // Draw Pins
         g.selectAll("circle").data(gameState.territories.filter(d => d.latlng?.length === 2)).enter().append("circle")
             .attr("cx", d => projection([d.latlng[1], d.latlng[0]])[0])
             .attr("cy", d => projection([d.latlng[1], d.latlng[0]])[1])
-            .attr("r", 2.5).attr("class", "territory-pin")
+            .attr("r", 3).attr("class", "territory-pin")
             .on("click", (e, d) => { e.stopPropagation(); if(!gameState.inGame) selectLocation(d); });
     }
 
+    barFill.style.width = "100%";
     setTimeout(() => {
         overlay.style.display = 'none';
         document.getElementById('viewport').style.display = 'block';
+        
         if (isLoad && gameState.saveData) {
-            const country = gameState.territories.find(t => t.name.common === gameState.saveData.country);
-            selectLocation(country);
-            handleAction(); 
+            gameState.gameDate = new Date(gameState.saveData.date);
+            selectLocation(gameState.saveData.country);
+            handleAction(); // Jump straight into game mode
         } else {
             randomizeJump();
         }
-    }, 1500);
-}
-
-function selectLocation(data) {
-    if (!data) return;
-    gameState.selectedCountry = data;
-    
-    // UI Update
-    document.getElementById('country-name-small').innerText = data.name.common.toUpperCase();
-    document.getElementById('country-flag').src = `https://flagcdn.com/w160/${data.cca2.toLowerCase()}.png`;
-      
-    // Rank Logic - Fixed rank disappearing
-    const sorted = gameState.territories.slice().sort((a,b) => getEconomyValue(b) - getEconomyValue(a));
-    const rank = sorted.findIndex(c => c.name.common === data.name.common) + 1;
-    
-    document.getElementById('money-display').innerText = `💰 Economy: $${getEconomyValue(data).toLocaleString()}`;
-    document.getElementById('rank-display').innerText = `🏆 Global Rank: #${rank}`;
-    document.getElementById('pop-display').innerText = `👥 Population: ${data.population.toLocaleString()}`;
-    
-    // Zoom
-    const coords = projection([data.latlng[1], data.latlng[0]]);
-    svg.transition().duration(1500).call(zoom.transform, d3.zoomIdentity.translate(window.innerWidth/2, window.innerHeight/2).scale(8).translate(-coords[0], -coords[1]));
+    }, 600);
 }
 
 window.handleAction = () => {
     if(!gameState.inGame) {
-        gameState.playerCountry = gameState.selectedCountry;
-        gameState.inGame = true;
-        document.getElementById('main-action-btn').innerText = "MANAGE STATE";
-        document.getElementById('hud-actions').style.display = "none";
-        document.getElementById('save-exit-btn').style.display = "block";
+        document.getElementById('tactical-hud').style.display = 'none';
+        document.getElementById('main-action-btn').style.display = 'none';
+        document.getElementById('loading-overlay').style.display = 'flex';
+        document.getElementById('loading-text').innerText = "SYNCHRONIZING ECONOMY...";
+        
+        setTimeout(() => {
+            gameState.inGame = true;
+            document.getElementById('loading-overlay').style.display = 'none';
+            document.getElementById('tactical-hud').style.display = 'block';
+            document.getElementById('hud-actions').innerHTML = `
+                <button class="big-neon-btn" style="border-color:#00ffff; color:#00ffff;" onclick="saveAndExit()">💾 SAVE & EXIT</button>
+            `;
+            const manageBtn = document.getElementById('main-action-btn');
+            manageBtn.innerText = "MANAGE STATE";
+            manageBtn.style.display = 'block';
+            document.getElementById('temporal-engine').style.display = 'block';
+        }, 1200);
     } else {
         const win = document.getElementById('management-window');
-        document.getElementById('manage-country').innerText = gameState.playerCountry.name.common.toUpperCase();
-        win.style.display = (win.style.display === "block") ? "none" : "block";
+        document.getElementById('manage-country').innerText = gameState.selectedCountry.name.common.toUpperCase();
+        win.style.display = win.style.display === "flex" ? "none" : "flex";
     }
 };
 
+function selectLocation(data) {
+    gameState.selectedCountry = data;
+    const gdpValue = realWorldData[data.name.common] || (data.population / 1000000) * 5;
+    const rank = sortedList.indexOf(data.name.common) + 1 || "100+";
+    document.getElementById('country-name-small').innerText = data.name.common.toUpperCase();
+    document.getElementById('country-flag').src = `https://flagcdn.com/w160/${data.cca2.toLowerCase()}.png`;
+    document.getElementById('money-display').innerText = `💰 GDP: ${formatMoney(gdpValue)}`;
+    document.getElementById('rank-display').innerText = `🏆 Rank: #${rank}`;
+    document.getElementById('pop-display').innerText = `👥 Pop: ${data.population.toLocaleString()}`;
+    const coords = projection([data.latlng[1], data.latlng[0]]);
+    svg.transition().duration(1000).call(zoom.transform, d3.zoomIdentity.translate(window.innerWidth/2, window.innerHeight/2).scale(6).translate(-coords[0], -coords[1]));
+}
+
 window.saveAndExit = () => {
-    const now = new Date();
-    const timestamp = `${now.getDate().toString().padStart(2,'0')}/${(now.getMonth()+1).toString().padStart(2,'0')}/${now.getFullYear()} ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
-    
-    localStorage.setItem('monetary_state_save', JSON.stringify({
-        country: gameState.playerCountry.name.common,
-        timestamp: timestamp
-    }));
-    
-    const overlay = document.getElementById('loading-overlay');
-    overlay.style.display = 'flex';
-    document.getElementById('loading-text').innerText = "UPLOADING STATE DATA TO CLOUD...";
-    
-    setTimeout(() => { location.reload(); }, 2000);
+    const data = { country: gameState.selectedCountry, date: gameState.gameDate.getTime() };
+    localStorage.setItem('monetary_state_save', JSON.stringify(data));
+    location.reload(); 
 };
 
-window.closeManage = () => { document.getElementById('management-window').style.display = "none"; };
-window.randomizeJump = () => { const r = gameState.territories[Math.floor(Math.random()*gameState.territories.length)]; if(r.latlng) selectLocation(r); };
+window.randomizeJump = () => {
+    const valid = gameState.territories.filter(t => t.name.common !== "Antarctica");
+    const r = valid[Math.floor(Math.random()*valid.length)];
+    if(r) selectLocation(r);
+};
+
+window.closeManage = () => document.getElementById('management-window').style.display = "none";
+function togglePause() { gameState.isPaused = !gameState.isPaused; document.getElementById('pause-btn').innerText = gameState.isPaused ? "▶" : "⏸"; }
+function adjustSpeed(delta) { 
+    let s = gameState.gameSpeed + delta; 
+    if (s >= 1 && s <= 5) { 
+        gameState.gameSpeed = s; 
+        document.querySelectorAll('.speed-bar').forEach((b, i) => b.classList.toggle('active', i < s)); 
+    } 
+}
+function tick() {
+    if (!gameState.inGame || gameState.isPaused) return;
+    gameState.gameDate.setDate(gameState.gameDate.getDate() + gameState.gameSpeed);
+    document.getElementById('game-clock').innerText = gameState.gameDate.toLocaleDateString('en-US', {month:'short', day:'2-digit', year:'numeric'}).toUpperCase();
+}
+setInterval(tick, 1000);
