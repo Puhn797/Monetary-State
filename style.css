@@ -1,19 +1,90 @@
 #game-overlay {
-        position: absolute;
-        top: 0; left: 0; width: 100%; height: 100%;
-        pointer-events: none; display: none; z-index: 2600;
-    }
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    display: none;
+    z-index: 2600;
+}
 
-    #status-bar {
-        position: absolute;
-        top: 20px; left: 20px;
-        background: rgba(0, 20, 0, 0.9);
-        border-left: 5px solid #00ff41;
-        padding: 15px 25px;
-        pointer-events: auto;
-        box-shadow: 0 0 20px rgba(0, 255, 65, 0.2);
-    }
+#status-bar {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: rgba(0, 20, 0, 0.9);
+    border-left: 5px solid #00ff41;
+    padding: 15px 25px;
+    pointer-events: auto;
+    box-shadow: 0 0 20px rgba(0, 255, 65, 0.2);
+}
 
-    .status-item { margin-bottom: 5px; font-weight: bold; }
-    #status-flag { width: 40px; vertical-align: middle; margin-right: 10px; border: 1px solid #00ff41; }
-    #rank-display { color: #ffff00; font-size: 0.9em; }
+.status-item { 
+    margin-bottom: 5px; 
+    font-weight: bold; 
+}
+
+#status-flag { 
+    width: 40px; 
+    vertical-align: middle; 
+    margin-right: 10px; 
+    border: 1px solid #00ff41; 
+}
+
+#rank-display { 
+    color: #ffff00; 
+    font-size: 0.9em; 
+}
+
+#save-window {
+    position: relative;
+    border: 2px solid #00ff41;
+    padding: 22px 25px;
+    width: 340px;
+    text-align: center;
+    background: rgba(0, 0, 0, 0.9);
+    box-shadow:
+        0 0 10px #00ff41,
+        inset 0 0 15px #00ff4155;
+}
+
+#save-window::before {
+    content: "";
+    position: absolute;
+    inset: -6px;
+    border: 1px solid #00ff41;
+    opacity: 0.4;
+    pointer-events: none;
+}
+
+.side-panel {
+    background: #000;
+    border: 2px solid #00ff41;
+    padding: 25px;
+    display: none;
+    flex-direction: column;
+    width: 360px;
+    margin-top: 10px;
+    max-height: 75vh;
+}
+
+#scroll-engine {
+    max-height: 320px;
+    overflow-y: auto;
+    padding-right: 8px;
+}
+
+/* Custom scrollbar */
+#scroll-engine::-webkit-scrollbar {
+    width: 6px;
+}
+
+#scroll-engine::-webkit-scrollbar-track {
+    background: #000;
+}
+
+#scroll-engine::-webkit-scrollbar-thumb {
+    background: #00ff41;
+    border-radius: 4px;
+}

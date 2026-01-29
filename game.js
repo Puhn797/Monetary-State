@@ -12,9 +12,190 @@ let gameState = {
     territories: [],
     gameDate: new Date(2026, 0, 1),
     gameSpeed: 1, 
-    // Check for existing save data on startup
     saveData: JSON.parse(localStorage.getItem('monetary_state_save')) || null
 };
+
+let lastTick = performance.now();
+let dayAccumulator = 0;
+let lastYear = gameState.gameDate.getFullYear();
+
+function tick() {
+    if (!gameState.inGame || gameState.isPaused) return;
+
+    const now = performance.now();
+    const delta = now - lastTick;
+    lastTick = now;
+
+    // 1 second = 1 game day
+    dayAccumulator += (delta / 1000) * gameState.gameSpeed;
+
+    while (dayAccumulator >= 1) {
+        gameState.gameDate.setDate(
+            gameState.gameDate.getDate() + 1
+        );
+        dayAccumulator--;
+
+        document.getElementById("game-clock").innerText =
+            gameState.gameDate.toLocaleDateString("en-US", {
+                month: "short",
+                day: "2-digit",
+                year: "numeric"
+            }).toUpperCase();
+
+        const currentYear = gameState.gameDate.getFullYear();
+
+        if (currentYear !== lastYear) {
+            lastYear = currentYear;
+
+            console.log("📅 NEW YEAR:", currentYear);
+
+            updateEconomy();
+            renderEconomyUI();
+        }
+    }
+}
+
+const economyState = {
+    inflation: 2,
+    unemployment: 3,
+
+    resources: {
+        "Natural Gas & Oil": ["Natural Gas", "Oil", "Coal"],
+        "Minerals & Ores": [
+            "Lithium", "Cobalt", "Nickel", "Graphite", "Rare-earth",
+            "Iron", "Copper", "Aluminum", "Manganese", "Quartz",
+            "Potash", "Phosphorus", "Sulfur", "Gold", "Silver",
+            "Platinum", "Silicon", "Tantalum", "Tellurium",
+            "Diamond", "Uranium"
+        ],
+        "Non-metal": [
+            "Sand", "Gravel", "Limestone", "Clay", "Gypsum",
+            "Marble", "Granite", "Salt", "Carbon"
+        ],
+        "Agriculture": ["Water", "Vegetation", "Meat"],
+        "Labor": ["Male (Adult)", "Female (Adult)", "Children"],
+        "Supply": ["Electricity", "Water", "Waste"]
+    },
+
+    values: {}
+};
+
+function initEconomy() {
+    for (const category in economyState.resources) {
+        const items = economyState.resources[category];
+        const count = items.length;
+
+        // Split 100% evenly first
+        let base = Math.floor(100 / count);
+        let remainder = 100 - base * count;
+
+        economyState.values[category] = {};
+
+        items.forEach((item, index) => {
+            let value = base + (index === 0 ? remainder : 0);
+
+            economyState.values[category][item] = {
+                percent: value,
+                change: randomChange(category)
+            };
+        });
+    }
+}
+
+function randomDelta() {
+    const r = Math.floor(Math.random() * 3) - 1;
+    return r;
+}
+
+function randomChange(category) {
+    let change = Math.floor(Math.random() * 11) - 5;
+
+    if (category === "Supply") {
+        return change;
+    }
+
+    return change;
+}
+
+function generateCategoryValues(items) {
+    let remaining = 100;
+    const result = {};
+
+    items.forEach((item, i) => {
+        if (i === items.length - 1) {
+            result[item] = remaining;
+        } else {
+            const val = Math.floor(Math.random() * (remaining + 1));
+            result[item] = val;
+            remaining -= val;
+        }
+    });
+
+    return result;
+}
+
+function updateEconomy() {
+    for (const category in economyState.values) {
+        for (const item in economyState.values[category]) {
+            const data = economyState.values[category][item];
+            const delta = randomDelta();
+
+            data.change = delta;
+            data.percent += delta;
+
+            if (data.percent < 0) data.percent = 0;
+            if (data.percent > 100) data.percent = 100;
+        }
+
+        let total = 0;
+        for (const item in economyState.values[category]) {
+            total += economyState.values[category][item].percent;
+        }
+
+        for (const item in economyState.values[category]) {
+            economyState.values[category][item].percent =
+                Math.round((economyState.values[category][item].percent / total) * 100);
+        }
+    }
+
+    renderEconomyUI();
+}
+
+function renderEconomyUI() {
+    const container = document.getElementById("scroll-engine");
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    for (const category in economyState.values) {
+        const title = document.createElement("h3");
+        title.className = "cat-head";
+        title.innerText = category.toUpperCase();
+        container.appendChild(title);
+
+        const list = document.createElement("ul");
+        list.className = "res-list";
+
+        for (const item in economyState.values[category]) {
+            const data = economyState.values[category][item];
+
+            let color = "#aaa";
+            if (data.change > 0) color = "#00ff41";
+            if (data.change < 0) color = "#ff4444";
+
+            const li = document.createElement("li");
+            li.innerHTML = `
+                ${item}: ${data.percent}% 
+                <span style="color:${color}">
+                    (${data.change > 0 ? "+" : ""}${data.change}%)
+                </span>
+            `;
+            list.appendChild(li);
+        }
+
+        container.appendChild(list);
+    }
+}
 
 const realWorldData = {
     "United States": 31821, "China": 20651, "Germany": 5328, "India": 4506, "Japan": 4464,
@@ -96,10 +277,33 @@ document.body.innerHTML = `
         <div id="menu-content">
             <div id="version-tag">INTERACTIVE ECONOMIC GAME V1.0.0</div>
             <h1 id="main-title">MONETARY STATE</h1>
-            <div style="display:flex; flex-direction:column; gap:15px; align-items:center;">
-                <button class="btn play-launch" onclick="startSimulation(false)">PLAY</button>
-                ${gameState.saveData ? `<button id="load-btn" class="btn play-launch" style="border-color:#00ffff; color:#00ffff;" onclick="startSimulation(true)">LOAD SAVE</button>` : ''}
-            </div>
+            <div style="display:flex; flex-direction:column; gap:20px; align-items:center;">
+
+    <button class="btn play-launch" onclick="startSimulation(false)">PLAY</button>
+
+    ${gameState.saveData ? `
+    <div id="save-window">
+        <div class="save-title">SAVED GAME</div>
+        <div class="save-country">${gameState.saveData.country.name.common}</div>
+        <div class="save-date">
+    ${new Date(gameState.saveData.date).toLocaleString('en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    })}
+</div>
+
+        <button class="btn load-btn" onclick="startSimulation(true)">
+            LOAD SAVE
+        </button>
+    </div>
+    ` : ''}
+
+</div>
+
             <div id="credits-container">
                 <div class="credit-header">DEVELOPED BY:</div>
                 <div class="credit-name">Kunanon Lerdsakunjinda (Kor) No. 2 M.3/11</div>
@@ -148,7 +352,8 @@ let g, projection, path, svg, zoom;
 
 // --- LOGIC FUNCTIONS ---
 
-async function startSimulation(isLoad) {
+async function startSimulation(isLoad) {initEconomy();
+    renderEconomyUI();
     const overlay = document.getElementById('loading-overlay');
     const barFill = document.getElementById('loading-bar-fill');
     document.getElementById('menu-screen').style.display = 'none';
@@ -187,7 +392,9 @@ async function startSimulation(isLoad) {
     setTimeout(() => {
         overlay.style.display = 'none';
         document.getElementById('viewport').style.display = 'block';
-        
+        lastTick = performance.now();
+dayAccumulator = 0;
+lastYear = gameState.gameDate.getFullYear();
         if (isLoad && gameState.saveData) {
             gameState.gameDate = new Date(gameState.saveData.date);
             selectLocation(gameState.saveData.country);
@@ -220,6 +427,7 @@ window.handleAction = () => {
     } else {
         const win = document.getElementById('management-window');
         document.getElementById('manage-country').innerText = gameState.selectedCountry.name.common.toUpperCase();
+        renderEconomyUI();
         win.style.display = win.style.display === "flex" ? "none" : "flex";
     }
 };
@@ -238,7 +446,11 @@ function selectLocation(data) {
 }
 
 window.saveAndExit = () => {
-    const data = { country: gameState.selectedCountry, date: gameState.gameDate.getTime() };
+    const data = {
+    country: gameState.selectedCountry,
+    date: Date.now()
+};
+
     localStorage.setItem('monetary_state_save', JSON.stringify(data));
     location.reload(); 
 };
@@ -258,9 +470,10 @@ function adjustSpeed(delta) {
         document.querySelectorAll('.speed-bar').forEach((b, i) => b.classList.toggle('active', i < s)); 
     } 
 }
-function tick() {
-    if (!gameState.inGame || gameState.isPaused) return;
-    gameState.gameDate.setDate(gameState.gameDate.getDate() + gameState.gameSpeed);
-    document.getElementById('game-clock').innerText = gameState.gameDate.toLocaleDateString('en-US', {month:'short', day:'2-digit', year:'numeric'}).toUpperCase();
+
+function gameLoop() {
+    tick();
+    requestAnimationFrame(gameLoop);
 }
-setInterval(tick, 1000);
+
+gameLoop();
