@@ -19,14 +19,19 @@ let lastTick = performance.now();
 let dayAccumulator = 0;
 let lastYear = gameState.gameDate.getFullYear();
 
-function tick() {
-    if (!gameState.inGame || gameState.isPaused) return;
+function addResource(name) {
+    document.getElementById("resources-list")
+        .insertAdjacentHTML(
+            "beforeend",
+            `<div class="item">${name}</div>`
+        );
+}
 
+function tick() {
     const now = performance.now();
     const delta = now - lastTick;
     lastTick = now;
-
-    // 1 second = 1 game day
+    if (!gameState.inGame || gameState.isPaused) return;
     dayAccumulator += (delta / 1000) * gameState.gameSpeed;
 
     while (dayAccumulator >= 1) {
@@ -53,6 +58,29 @@ function tick() {
             renderEconomyUI();
         }
     }
+}
+
+const saveWindow = document.getElementById("save-window");
+
+if (gameState.saveData) {
+    saveWindow.style.display = "block";
+
+    document.getElementById("save-country").textContent =
+        gameState.saveData.country.name.common;
+
+    document.getElementById("save-date").textContent =
+        new Date(gameState.saveData.date).toLocaleString("en-GB", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit"
+        });
+
+    document.getElementById("load-save-btn").onclick = () => {
+        startSimulation(true);
+    };
 }
 
 const economyState = {
@@ -85,7 +113,6 @@ function initEconomy() {
         const items = economyState.resources[category];
         const count = items.length;
 
-        // Split 100% evenly first
         let base = Math.floor(100 / count);
         let remainder = 100 - base * count;
 
@@ -211,111 +238,6 @@ function formatMoney(valueInBillions) {
 
 const sortedList = Object.keys(realWorldData).sort((a,b) => realWorldData[b] - realWorldData[a]);
 
-// --- INITIAL RENDER ---
-document.body.innerHTML = `
-    <div id="loading-overlay" style="display:none;">
-        <div id="loading-container">
-            <div id="loading-text">INITIALIZING GLOBAL SYSTEMS...</div>
-            <div id="loading-bar-container"><div id="loading-bar-fill"></div></div>
-        </div>
-    </div>
-    
-    <div id="viewport" style="display:none;">
-        <div id="temporal-engine">
-            <div id="game-clock">JAN 01, 2026</div>
-            <div id="speed-controls">
-                <button id="pause-btn" class="time-btn" onclick="togglePause()">⏸</button>
-                <button class="time-btn" onclick="adjustSpeed(-1)">➖</button>
-                <div id="speed-meter">
-                    <div class="speed-bar active"></div><div class="speed-bar"></div>
-                    <div class="speed-bar"></div><div class="speed-bar"></div>
-                    <div class="speed-bar"></div>
-                </div>
-                <button class="time-btn" onclick="adjustSpeed(1)">➕</button>
-            </div>
-        </div>
-
-        <div id="left-wing-stack">
-            <div id="tactical-hud">
-                <div id="hud-header">
-                    <img id="country-flag" src="" alt="">
-                    <div id="country-name-small">SELECT STATE</div>
-                </div>
-                <div id="hud-stats">
-                    <p id="money-display">💰 GDP: ---</p>
-                    <p id="rank-display">🏆 Rank: ---</p>
-                    <p id="pop-display">👥 Pop: ---</p>
-                </div>
-                <div id="hud-actions">
-                    <button id="btn-rand" class="big-neon-btn" onclick="randomizeJump()">RANDOMIZE</button>
-                    <button id="btn-exit-main" class="big-neon-btn btn-exit" onclick="location.reload()">EXIT GAME</button>
-                </div>
-            </div>
-
-            <div id="management-window" class="side-panel">
-                <h2 id="manage-country" style="color:#fff; border-bottom: 2px solid #00ff41;"></h2>
-                <div class="play-stats-block">
-                    <div class="stat-line"><span>Inflation rate:</span> <span class="val">2.0%</span></div>
-                    <div class="stat-line"><span>Unemployment rate:</span> <span class="val">3.1%</span></div>
-                </div>
-                <div id="scroll-engine">
-                    <h3 class="cat-head">RESOURCES:</h3>
-                    <ul class="res-list">
-                        <li>Natural Gas: 32% <span class="up">(+2%)</span></li>
-                        <li>Agriculture: 43% <span class="up">(+7%)</span></li>
-                        <li>Crude Oil: 22% <span class="up">(+1%)</span></li>
-                    </ul>
-                </div>
-                <button class="big-neon-btn" onclick="closeManage()">CLOSE INTERFACE</button>
-            </div>
-        </div>
-
-        <button id="main-action-btn" class="fixed-corner-btn" onclick="handleAction()">ENTER STATE</button>
-    </div>
-
-    <div id="menu-screen">
-        <div id="menu-content">
-            <div id="version-tag">INTERACTIVE ECONOMIC GAME V1.0.0</div>
-            <h1 id="main-title">MONETARY STATE</h1>
-            <div style="display:flex; flex-direction:column; gap:20px; align-items:center;">
-
-    <button class="btn play-launch" onclick="startSimulation(false)">PLAY</button>
-
-    ${gameState.saveData ? `
-    <div id="save-window">
-        <div class="save-title">SAVED GAME</div>
-        <div class="save-country">${gameState.saveData.country.name.common}</div>
-        <div class="save-date">
-    ${new Date(gameState.saveData.date).toLocaleString('en-GB', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-    })}
-</div>
-
-        <button class="btn load-btn" onclick="startSimulation(true)">
-            LOAD SAVE
-        </button>
-    </div>
-    ` : ''}
-
-</div>
-
-            <div id="credits-container">
-                <div class="credit-header">DEVELOPED BY:</div>
-                <div class="credit-name">Kunanon Lerdsakunjinda (Kor) No. 2 M.3/11</div>
-                <div class="credit-name">Taweesak Poonoi (Tonkaow) No. 5 M.3/11</div>
-                <div class="credit-name">Tanaphat Prempee (Namo) No. 7 M.3/11</div>
-                <div class="credit-name">Asama Noiuthai (Puhn) No. 13 M.3/11</div>
-            </div>
-        </div>
-    </div>
-`;
-
-// --- STYLES ---
 const style = document.createElement('style');
 style.innerHTML = `
     body { background: #000; color: #00ff41; font-family: 'Courier New', monospace; margin: 0; overflow: hidden; }
@@ -347,11 +269,7 @@ style.innerHTML = `
     .territory-pin { fill: #00ff41; cursor: pointer; filter: drop-shadow(0 0 3px #00ff41); }
 `;
 document.head.appendChild(style);
-
 let g, projection, path, svg, zoom;
-
-// --- LOGIC FUNCTIONS ---
-
 async function startSimulation(isLoad) {initEconomy();
     renderEconomyUI();
     const overlay = document.getElementById('loading-overlay');
@@ -398,7 +316,7 @@ lastYear = gameState.gameDate.getFullYear();
         if (isLoad && gameState.saveData) {
             gameState.gameDate = new Date(gameState.saveData.date);
             selectLocation(gameState.saveData.country);
-            handleAction(); // Jump straight into game mode
+            handleAction();
         } else {
             randomizeJump();
         }
@@ -414,6 +332,8 @@ window.handleAction = () => {
         
         setTimeout(() => {
             gameState.inGame = true;
+            lastTick = performance.now();
+            dayAccumulator = 0;
             document.getElementById('loading-overlay').style.display = 'none';
             document.getElementById('tactical-hud').style.display = 'block';
             document.getElementById('hud-actions').innerHTML = `

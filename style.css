@@ -1,13 +1,11 @@
 #game-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    display: none;
-    z-index: 2600;
+    pointer-events: none !important;
 }
+
+body {
+  margin: 0;
+}
+
 
 #status-bar {
     position: absolute;
@@ -37,6 +35,15 @@
     font-size: 0.9em; 
 }
 
+#management-window {
+    position: relative;
+    height: auto;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
 #save-window {
     position: relative;
     border: 2px solid #00ff41;
@@ -59,32 +66,43 @@
 }
 
 .side-panel {
+    min-height: 0;
     background: #000;
     border: 2px solid #00ff41;
-    padding: 25px;
-    display: none;
-    flex-direction: column;
+    padding: 20px;
     width: 360px;
-    margin-top: 10px;
-    max-height: 75vh;
+    height: 100%;
+    max-height: calc(100svh - 120px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.side-panel > * {
+    min-height: 0;
 }
 
 #scroll-engine {
-    max-height: 320px;
+    flex: 1;
+    min-height: 0;
     overflow-y: auto;
+    overflow-x: hidden;
     padding-right: 8px;
 }
 
-/* Custom scrollbar */
 #scroll-engine::-webkit-scrollbar {
     width: 6px;
 }
-
-#scroll-engine::-webkit-scrollbar-track {
-    background: #000;
-}
-
 #scroll-engine::-webkit-scrollbar-thumb {
     background: #00ff41;
-    border-radius: 4px;
+}
+#scroll-engine::-webkit-scrollbar-track {
+    background: #001a00;
+}
+
+.cat-head {
+    position: sticky;
+    top: 0;
+    background: #000;
+    z-index: 2;
 }
