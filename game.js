@@ -15,6 +15,11 @@ let gameState = {
     saveData: JSON.parse(localStorage.getItem('monetary_state_save')) || null
 };
 
+document.addEventListener("DOMContentLoaded", () => {
+    const win = document.getElementById("management-window");
+    if (win) win.style.display = "none";
+});
+
 let lastTick = performance.now();
 let dayAccumulator = 0;
 let lastYear = gameState.gameDate.getFullYear();
@@ -195,32 +200,36 @@ function renderEconomyUI() {
     container.innerHTML = "";
 
     for (const category in economyState.values) {
-        const title = document.createElement("h3");
-        title.className = "cat-head";
-        title.innerText = category.toUpperCase();
-        container.appendChild(title);
+    const section = document.createElement("div");
+    section.className = "category-section";
 
-        const list = document.createElement("ul");
-        list.className = "res-list";
+    const title = document.createElement("h3");
+    title.className = "cat-head";
+    title.innerText = category.toUpperCase();
 
-        for (const item in economyState.values[category]) {
-            const data = economyState.values[category][item];
+    const list = document.createElement("ul");
+    list.className = "res-list";
 
-            let color = "#aaa";
-            if (data.change > 0) color = "#00ff41";
-            if (data.change < 0) color = "#ff4444";
+    for (const item in economyState.values[category]) {
+        const data = economyState.values[category][item];
 
-            const li = document.createElement("li");
-            li.innerHTML = `
-                ${item}: ${data.percent}% 
-                <span style="color:${color}">
-                    (${data.change > 0 ? "+" : ""}${data.change}%)
-                </span>
-            `;
-            list.appendChild(li);
-        }
+        let color = "#aaa";
+        if (data.change > 0) color = "#00ff41";
+        if (data.change < 0) color = "#ff4444";
 
-        container.appendChild(list);
+        const li = document.createElement("li");
+        li.innerHTML = `
+            ${item}: ${data.percent}% 
+            <span style="color:${color}">
+                (${data.change > 0 ? "+" : ""}${data.change}%)
+            </span>
+        `;
+        list.appendChild(li);
+    }
+
+    section.appendChild(title);
+    section.appendChild(list);
+    container.appendChild(section);
     }
 }
 
@@ -314,12 +323,26 @@ async function startSimulation(isLoad) {initEconomy();
 dayAccumulator = 0;
 lastYear = gameState.gameDate.getFullYear();
         if (isLoad && gameState.saveData) {
-            gameState.gameDate = new Date(gameState.saveData.date);
-            selectLocation(gameState.saveData.country);
-            handleAction();
-        } else {
-            randomizeJump();
-        }
+    gameState.gameDate = new Date(gameState.saveData.date);
+    gameState.selectedCountry = gameState.saveData.country;
+    gameState.inGame = true;
+
+    selectLocation(gameState.saveData.country);
+
+    document.getElementById('tactical-hud').style.display = 'block';
+    document.getElementById('temporal-engine').style.display = 'block';
+
+    const manageBtn = document.getElementById('main-action-btn');
+    manageBtn.innerText = "MANAGE STATE";
+    manageBtn.style.display = 'block';
+    manageBtn.onclick = openManagement;
+
+    document.getElementById('hud-actions').innerHTML = `
+        <button class="big-neon-btn" style="border-color:#00ffff; color:#00ffff;" onclick="saveAndExit()">💾 SAVE & EXIT</button>
+    `;
+} else {
+    randomizeJump();
+}
     }, 600);
 }
 
@@ -342,17 +365,15 @@ window.handleAction = () => {
             const manageBtn = document.getElementById('main-action-btn');
             manageBtn.innerText = "MANAGE STATE";
             manageBtn.style.display = 'block';
+            manageBtn.onclick = openManagement;
             document.getElementById('temporal-engine').style.display = 'block';
         }, 1200);
     } else {
-        const win = document.getElementById('management-window');
-        document.getElementById('manage-country').innerText = gameState.selectedCountry.name.common.toUpperCase();
-        renderEconomyUI();
-        win.style.display = win.style.display === "flex" ? "none" : "flex";
     }
 };
 
 function selectLocation(data) {
+
     gameState.selectedCountry = data;
     const gdpValue = realWorldData[data.name.common] || (data.population / 1000000) * 5;
     const rank = sortedList.indexOf(data.name.common) + 1 || "100+";
@@ -381,7 +402,23 @@ window.randomizeJump = () => {
     if(r) selectLocation(r);
 };
 
-window.closeManage = () => document.getElementById('management-window').style.display = "none";
+window.openManagement = () => {
+    if (!gameState.inGame || !gameState.selectedCountry) return;
+    gameState.isPaused = true;
+    const win = document.getElementById('management-window');
+    document.getElementById('manage-country').innerText =
+    gameState.selectedCountry.name.common.toUpperCase();
+
+    renderEconomyUI();
+    win.style.display = "flex";
+};
+
+window.closeManage = () => {
+    const win = document.getElementById("management-window");
+    win.style.display = "none";
+    gameState.isPaused = false;
+};
+
 function togglePause() { gameState.isPaused = !gameState.isPaused; document.getElementById('pause-btn').innerText = gameState.isPaused ? "▶" : "⏸"; }
 function adjustSpeed(delta) { 
     let s = gameState.gameSpeed + delta; 
