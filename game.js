@@ -17,13 +17,109 @@ let gameState = {
     saveData: JSON.parse(localStorage.getItem('monetary_state_save')) || null
 };
 
-const MAX_TREASURY = 9_000_000_000_000_000;
+const MAX_TREASURY = 9_000_000_000;
 
 const realWorldData = {
-    "United States": 31821, "China": 20651, "Germany": 5328, "India": 4506, "Japan": 4464,
-    "United Kingdom": 4226, "France": 3559, "Italy": 2702, "Russia": 2509, "Canada": 2421,
-    "Brazil": 2293, "Spain": 2042, "Mexico": 2031, "Australia": 1948, "South Korea": 1937,
-    "Thailand": 561, "Vietnam": 511, "Malaysia": 505, "Philippines": 533
+    "United States": 31821,
+    "China": 20651,
+    "Germany": 5328,
+    "India": 4506,
+    "Japan": 4464,
+    "United Kingdom": 4226,
+    "France": 3559,
+    "Italy": 2702,
+    "Russia": 2509,
+    "Canada": 2421,
+    "Brazil": 2293,
+    "Spain": 2042,
+    "Mexico": 2031,
+    "Australia": 1948,
+    "South Korea": 1937,
+    "Turkey" : 1580,
+    "Indonesia" : 1550,
+    "Netherlands" : 1410,
+    "Saudi Arabia" : 1320,
+    "Poland" : 1110,
+    "Switzerland" : 1070,
+    "Taiwan" : 971,
+    "Belgium" : 761,
+    "Ireland" : 750,
+    "Sweden" : 712,
+    "Argentina" : 668,
+    "Israel" : 666,
+    "Singapore" : 606,
+    "Austria" : 604,
+    "United Arab Emirates" : 601,
+    "Thailand": 561,
+    "Norway" : 548,
+    "Philippines": 533,
+    "Bangladesh" : 519,
+    "Vietnam": 511,
+    "Malaysia": 505,
+    "Denmark" : 500,
+    "Colombia" : 462,
+    "Hong Kong" : 447,
+    "Romania" : 445,
+    "South Africa" : 444,
+    "Czech Rebublic" : 417,
+    "Pakistan" : 411,
+    "Egypt" : 400,
+    "Iran" : 376,
+    "Portugal" : 365,
+    "Chile" : 363,
+    "Finland" : 336,
+    "Nigeria" : 334,
+    "Peru" : 327,
+    "Kazakhstan" : 320,
+    "Greece" : 305,
+    "Algeria" : 285,
+    "New Zealand" : 281,
+    "Iraq" : 274,
+    "Hungary" : 270,
+    "Qatar" : 239,
+    "Ukraine" : 224,
+    "Cuba" : 202,
+    "Morocco" : 196,
+    "Slovakia" : 168,
+    "Kuwait" : 163,
+    "Uzbekistan" : 159,
+    "Bulgaria" : 142,
+    "Kenya" : 141,
+    "Dominican Republic" : 138,
+    "Ecuador" : 135,
+    "Guatemala" : 130,
+    "Puerto Rico" : 129,
+    "Ethiopia" : 126,
+    "Ghana" : 113.49,
+    "Croatia" : 113.13,
+    "Serbia" : 112,
+    "Ivory Coast" : 111,
+    "Angola" : 110,
+    "Costa Rica" : 109.14,
+    "Oman" : 109,
+    "Luxembourg" : 108,
+    "Lithuania" : 105,
+    "Sri Lanka" : 99,
+    "Panama" : 96,
+    "Tanzania" : 95,
+    "Uruguay" : 91.64,
+    "Belarus" : 91,
+    "DR Congo" : 88,
+    "Slovenia" : 86,
+    "Azerbaijan" : 80.02,
+    "Venezuela" : 80,
+    "Turkmenistan" : 77,
+    "Uganda" : 72,
+    "Cameroon" : 68,
+    "Myanmar" : 65,
+    "Tunisia" : 60,
+    "Jordan" : 59,
+    "Bolivia" : 57,
+    "Zimbabwe" : 55.43,
+    "Macao" : 55,
+    "Latvia" : 52,
+    "Paraguay" : 51.67,
+    "Cambodia" : 51.51,
 };
 
 let gdpRanking = [];
@@ -40,14 +136,10 @@ function buildGdpRanking() {
 }
 
 function getCountryRank(countryName) {
-    const index = gdpRanking.findIndex(
-        c => c.name.common === countryName
-    );
+    const entry = gdpRanking.find(c => c.name === countryName);
 
-    if (index === -1) return "100+";
-
-    const rank = index + 1;
-    return rank <= 100 ? rank : "100+";
+    if (!entry) return "100+";
+    return entry.rank;
 }
 
 function restoreTerritoriesGDP(savedList) {
@@ -80,9 +172,11 @@ let lastTick = performance.now();
 let dayAccumulator = 0;
 let lastYear = gameState.gameDate.getFullYear();
 
-function getCountryGDP(country) {
-    if (realWorldData[country.name.common]) {
-        return realWorldData[country.name.common] * 1000;
+    function getCountryGDP(country) {
+    const name = country.name.common;
+
+    if (realWorldData[name] !== undefined) {
+        return Math.floor(realWorldData[name] * 1000);
     }
 
     return Math.floor((country.population / 1_000_000) * 5000);
@@ -101,7 +195,12 @@ function renderTreasury() {
 
 function assignRealGDP() {
     gameState.territories.forEach(c => {
-        c.gdp = getCountryGDP(c);
+        const name = c.name.common;
+        if (realWorldData[name] !== undefined) {
+            c.gdp = Math.floor(realWorldData[name] * 1000); 
+        } else {
+            c.gdp = Math.floor((c.population / 1_000_000) * 5000);
+        }
     });
 }
 
@@ -110,17 +209,16 @@ function selectLocation(data) {
     console.warn("Selected country not from territories array");
 }
     gameState.selectedCountry = data;
-if (typeof data.gdp !== "number") {
+if (typeof data.gdp !== "number" || data.gdp <= 0) {
     data.gdp = getCountryGDP(data);
 }
-gameState.gdp = data.gdp;
-if (gameState.treasury === 0) {
-    gameState.treasury = data.gdp;
-}
-    buildGdpRanking();             
+    gameState.gdp = data.gdp;
+    gameState.treasury = gameState.gdp;
     renderTreasury();
-    const rank = getCountryRank(data.name.common);
 
+    buildGdpRanking();
+    const rank = getCountryRank(data.name.common); 
+        
     document.getElementById('country-name-small').innerText =
         data.name.common.toUpperCase();
 
@@ -193,8 +291,8 @@ function tick() {
 
     const gdpIncome = Math.floor(gameState.gdp * 0.02);
     addToTreasury(gdpIncome);
-
     buildGdpRanking();
+
     updateHud();
     renderTreasury();
 
@@ -373,16 +471,18 @@ function renderEconomyUI() {
 }
 
 function formatMoney(value) {
-    if (value >= 1_000_000_000_000) {
-        return `$${(value / 1_000_000_000_000).toFixed(2)} Trillion`;
-    }
-    if (value >= 1_000_000_000) {
-        return `$${(value / 1_000_000_000).toFixed(2)} Billion`;
-    }
+
     if (value >= 1_000_000) {
-        return `$${(value / 1_000_000).toFixed(2)} Million`;
+        return `$${(value / 1_000_000).toFixed(2)} Trillion`;
     }
-    return `$${value.toLocaleString()}`;
+    if (value >= 1_000) {
+        return `$${(value / 1_000).toFixed(2)} Billion`;
+    }
+    if (value >= 1) {
+        return `$${value.toFixed(2)} Million`;
+    }
+
+    return `$${value.toFixed(2)} Million`;
 }
 
 const sortedList = Object.keys(realWorldData).sort((a,b) => realWorldData[b] - realWorldData[a]);
@@ -419,9 +519,10 @@ style.innerHTML = `
 `;
 document.head.appendChild(style);
 let g, projection, path, svg, zoom;
-async function startSimulation(isLoad) {if (!isLoad) {
+async function startSimulation(isLoad) {if (!isLoad) 
+    {
     initEconomy();
-}
+    }
     renderEconomyUI();
     const overlay = document.getElementById('loading-overlay');
     const barFill = document.getElementById('loading-bar-fill');
@@ -439,14 +540,17 @@ async function startSimulation(isLoad) {if (!isLoad) {
         barFill.style.width = "40%";
         const world = await d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson");
         const resp = await fetch('https://restcountries.com/v3.1/all?fields=name,latlng,cca2,population');
-        gameState.territories = await resp.json();
-        assignRealGDP();
 
-        if (isLoad && gameState.saveData?.territoriesGDP) {
+        gameState.territories = await resp.json();
+
+        if (!isLoad) {
+            assignRealGDP();
+        } else if (gameState.saveData?.territoriesGDP) {
             restoreTerritoriesGDP(gameState.saveData.territoriesGDP);
         }
 
         buildGdpRanking();
+
 
         barFill.style.width = "70%";
         g.selectAll("path").data(world.features).enter().append("path").attr("d", path)
@@ -463,8 +567,6 @@ async function startSimulation(isLoad) {if (!isLoad) {
             .attr("r", 3).attr("class", "territory-pin")
             .on("click", (e, d) => { e.stopPropagation(); if(!gameState.inGame) selectLocation(d); });
     }
-
-    barFill.style.width = "100%";
 
 setTimeout(() => {
     overlay.style.display = 'none';
@@ -495,8 +597,6 @@ setTimeout(() => {
         selectLocation(gameState.selectedCountry);
 
         renderTreasury();
-        buildGdpRanking();
-        updateHud();
 
         document.getElementById('tactical-hud').style.display = 'block';
         document.getElementById('temporal-engine').style.display = 'block';
@@ -509,12 +609,11 @@ setTimeout(() => {
         document.getElementById('hud-actions').innerHTML = `
             <button class="big-neon-btn" style="border-color:#00ffff; color:#00ffff;" onclick="saveAndExit()">💾 SAVE & EXIT</button>
         `;
+
     } else {
         randomizeJump();
-    }
-
-}, 600);
-
+        }
+    }, 600);
 }
 
 window.handleAction = () => {
@@ -528,6 +627,13 @@ window.handleAction = () => {
             gameState.inGame = true;
             lastTick = performance.now();
             dayAccumulator = 0;
+
+            if (gameState.selectedCountry) {
+                gameState.gdp = gameState.selectedCountry.gdp;
+                gameState.treasury = gameState.gdp;
+                renderTreasury();
+            }
+
             document.getElementById('loading-overlay').style.display = 'none';
             document.getElementById('tactical-hud').style.display = 'block';
             document.getElementById('hud-actions').innerHTML = `
