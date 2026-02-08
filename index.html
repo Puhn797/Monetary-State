@@ -66,31 +66,43 @@
         <button id="main-action-btn" class="fixed-corner-btn" onclick="handleAction()">ENTER STATE</button>
     </div>
 
-    <div id="menu-screen">
-        <div id="menu-content">
-            <div id="version-tag">INTERACTIVE ECONOMIC GAME V1.0.0</div>
-            <h1 id="main-title">MONETARY STATE</h1>
-            <div style="display:flex; flex-direction:column; gap:20px; align-items:center;">
+   <div id="menu-screen">
+    <div>
+        <div style="font-size:14px; letter-spacing:3px; margin-bottom:10px;">
+            INTERACTIVE ECONOMIC GAME v1.0.0
+        </div>
 
-    <button class="btn play-launch" onclick="startSimulation(false)">PLAY</button>
-    <div id="save-window" style="display:none;">
-    <div class="save-title">SAVED GAME</div>
-    <div class="save-country" id="save-country"></div>
-    <div class="save-date" id="save-date"></div>
-    <button class="btn load-btn" id="load-save-btn">
-        LOAD SAVE
-    </button>
-</div>
-</div>
-            <div id="credits-container">
-                <div class="credit-header">DEVELOPED BY:</div>
-                <div class="credit-name">Kunanon Lerdsakunjinda (Kor) No. 2 M.3/11</div>
-                <div class="credit-name">Taweesak Poonoi (Tonkaow) No. 5 M.3/11</div>
-                <div class="credit-name">Tanaphat Prempee (Namo) No. 7 M.3/11</div>
-                <div class="credit-name">Asama Noiuthai (Puhn) No. 13 M.3/11</div>
+        <h1 id="main-title">MONETARY STATE</h1>
+
+        <button class="play-launch" onclick="startSimulation(false)">
+            PLAY
+        </button>
+
+        <div id="save-window" style="margin-top:40px; display:none;">
+            <div style="border:2px solid #00ff41; padding:25px; width:350px; margin:auto;">
+                <div>SAVED GAME</div>
+                <div id="save-country">COUNTRY</div>
+                <div id="save-date">DATE</div>
+
+                <button id="load-save-btn" class="play-launch" style="margin-top:20px;">
+                    LOAD SAVE
+                </button>
             </div>
         </div>
+
+        <hr style="margin:60px auto; width:60%; border:1px solid #00ff41;">
+
+        <div>
+            <div>DEVELOPED BY:</div>
+            <p>
+                Kunanon Lerdsakunjinda (Kor) No. 2 M.3/11<br>
+                Taweesak Poonoi (Tonkow) No. 5 M.3/11<br>
+                Tanaphat Prempee (Namo) No. 7 M.3/11<br>
+                Asama Noiuthai (Puhn) No. 13 M.3/11
+            </p>
+        </div>
     </div>
+</div>
 <script src="game.js"></script>
 <script>
 document.addEventListener("DOMContentLoaded", () => {

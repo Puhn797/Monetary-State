@@ -61,7 +61,7 @@ const realWorldData = {
     "Hong Kong" : 447,
     "Romania" : 445,
     "South Africa" : 444,
-    "Czech Rebublic" : 417,
+    "Czechia" : 417,
     "Pakistan" : 411,
     "Egypt" : 400,
     "Iran" : 376,
@@ -155,11 +155,6 @@ function restoreTerritoriesGDP(savedList) {
         }
     });
 }
-
-document.addEventListener("DOMContentLoaded", () => {
-    const win = document.getElementById("management-window");
-    if (win) win.style.display = "none";
-});
 
 function addToTreasury(amount) {
     gameState.treasury = Math.min(
@@ -302,28 +297,30 @@ function tick() {
     }
 }
 
-const saveWindow = document.getElementById("save-window");
+document.addEventListener("DOMContentLoaded", () => {
+    const saveWindow = document.getElementById("save-window");
 
-if (gameState.saveData) {
-    saveWindow.style.display = "block";
+    if (gameState.saveData && saveWindow) {
+        saveWindow.style.display = "block";
 
-    document.getElementById("save-country").textContent =
-        gameState.saveData.country.name.common;
+        document.getElementById("save-country").textContent =
+            gameState.saveData.countryName;
 
-    document.getElementById("save-date").textContent =
-        new Date(gameState.saveData.date).toLocaleString("en-GB", {
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit"
-        });
+        document.getElementById("save-date").textContent =
+            new Date(gameState.saveData.date).toLocaleString("en-GB", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit"
+            });
 
-    document.getElementById("load-save-btn").onclick = () => {
-        startSimulation(true);
-    };
-}
+        document.getElementById("load-save-btn").onclick = () => {
+            startSimulation(true);
+        };
+    }
+});
 
 const economyState = {
     inflation: 2,
@@ -487,37 +484,6 @@ function formatMoney(value) {
 
 const sortedList = Object.keys(realWorldData).sort((a,b) => realWorldData[b] - realWorldData[a]);
 
-const style = document.createElement('style');
-style.innerHTML = `
-    body { background: #000; color: #00ff41; font-family: 'Courier New', monospace; margin: 0; overflow: hidden; }
-    #menu-screen { position: fixed; inset: 0; display: flex; justify-content: center; align-items: center; background: #000; z-index: 9000; text-align: center; }
-    #main-title { font-size: 5.5em; letter-spacing: 15px; margin: 0; text-shadow: 0 0 20px #00ff41; }
-    .play-launch { width: 350px; padding: 20px; font-size: 1.8em; font-weight: bold; border: 2px solid #00ff41; color: #00ff41; background:none; cursor:pointer;}
-    .play-launch:hover { background: #00ff41; color: #000; }
-    
-    #loading-overlay { position: fixed; inset: 0; background: #000; z-index: 10000; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-    #loading-container { width: 400px; text-align: center; }
-    #loading-text { color: #00ff41; font-size: 1.2em; letter-spacing: 3px; margin-bottom: 20px; }
-    #loading-bar-container { width: 100%; height: 4px; background: #002200; border-radius: 2px; overflow: hidden; }
-    #loading-bar-fill { width: 0%; height: 100%; background: #00ff41; box-shadow: 0 0 10px #00ff41; transition: width 0.3s; }
-
-    #temporal-engine { position: absolute; top: 20px; right: 20px; background: #000; border: 3px solid #00ff41; border-radius: 15px; padding: 15px; z-index: 9000; text-align: center; display: none; }
-    #game-clock { font-size: 1.8em; font-weight: bold; margin-bottom: 10px; color: #00ff41; }
-    .time-btn { background: none; border: 2px solid #00ff41; color: #00ff41; border-radius: 5px; cursor: pointer; font-size: 1.2em; padding: 5px 10px; }
-    #speed-meter { display: flex; gap: 4px; padding: 5px; border: 1px solid #00ff41; border-radius: 4px; justify-content: center; }
-    .speed-bar { width: 8px; height: 18px; background: #003300; }
-    .speed-bar.active { background: #00ff41; }
-
-    #tactical-hud { background: #000; border: 2px solid #00ff41; padding: 25px; width: 360px; }
-    #left-wing-stack { position: absolute; top: 20px; left: 20px; z-index: 5000; }
-    .side-panel { background: #000; border: 2px solid #00ff41; padding: 25px; display: none; flex-direction: column; width: 360px; margin-top: 10px; }
-    .big-neon-btn { background: #000; border: 2px solid #00ff41; color: #00ff41; padding: 15px; width: 100%; font-family: inherit; font-weight: bold; cursor: pointer; margin-top: 10px; }
-    .fixed-corner-btn { position: absolute; bottom: 30px; right: 30px; padding: 20px 50px; border: 3px solid #00ff41; background: #000; color: #00ff41; font-family: inherit; font-weight: bold; cursor: pointer; font-size: 1.4em; z-index: 8000; }
-    
-    .land { fill: #001a00; stroke: #00ff41; stroke-width: 0.5px; cursor: pointer; }
-    .territory-pin { fill: #00ff41; cursor: pointer; filter: drop-shadow(0 0 3px #00ff41); }
-`;
-document.head.appendChild(style);
 let g, projection, path, svg, zoom;
 async function startSimulation(isLoad) {if (!isLoad) 
     {
@@ -527,14 +493,16 @@ async function startSimulation(isLoad) {if (!isLoad)
     const overlay = document.getElementById('loading-overlay');
     const barFill = document.getElementById('loading-bar-fill');
     document.getElementById('menu-screen').style.display = 'none';
+    document.getElementById('viewport').style.display = 'block';
     overlay.style.display = 'flex';
 
     if (!svg) {
-        svg = d3.select("#viewport").append("svg").attr("width", "100%").attr("height", "100%");
+        svg = d3.select("#viewport").append("svg").attr("width", window.innerWidth).attr("height", window.innerHeight);
         g = svg.append("g");
         zoom = d3.zoom().scaleExtent([1, 15]).on("zoom", (e) => g.attr("transform", e.transform));
         svg.call(zoom);
-        projection = d3.geoMercator().scale(250).translate([window.innerWidth/2, window.innerHeight/1.5]);
+        projection = d3.geoMercator().scale(window.innerWidth / 6.5).translate([window.innerWidth / 2,window.innerHeight * 0.5
+    ]);
         path = d3.geoPath().projection(projection);
 
         barFill.style.width = "40%";
@@ -567,6 +535,17 @@ async function startSimulation(isLoad) {if (!isLoad)
             .attr("r", 3).attr("class", "territory-pin")
             .on("click", (e, d) => { e.stopPropagation(); if(!gameState.inGame) selectLocation(d); });
     }
+
+    function resetMapView() {
+  if (!svg || !zoom || !g) return;
+
+  svg
+    .transition()
+    .duration(0)
+    .call(zoom.transform, d3.zoomIdentity);
+
+  g.attr("transform", null);
+}
 
 setTimeout(() => {
     overlay.style.display = 'none';
@@ -611,41 +590,56 @@ setTimeout(() => {
         `;
 
     } else {
-        randomizeJump();
+    randomizeJump();
+
+    document.getElementById('tactical-hud').style.display = 'block';
+    document.getElementById('temporal-engine').style.display = 'block';
+
+    const manageBtn = document.getElementById('main-action-btn');
+    manageBtn.innerText = "ENTER STATE";
+    manageBtn.style.display = 'block';
         }
     }, 600);
 }
 
 window.handleAction = () => {
-    if(!gameState.inGame) {
+    if (!gameState.selectedCountry) {
+        alert("No country selected!");
+        return;
+    }
+
+    if (!gameState.inGame) {
         document.getElementById('tactical-hud').style.display = 'none';
         document.getElementById('main-action-btn').style.display = 'none';
         document.getElementById('loading-overlay').style.display = 'flex';
         document.getElementById('loading-text').innerText = "SYNCHRONIZING ECONOMY...";
-        
+
         setTimeout(() => {
             gameState.inGame = true;
             lastTick = performance.now();
             dayAccumulator = 0;
 
-            if (gameState.selectedCountry) {
-                gameState.gdp = gameState.selectedCountry.gdp;
-                gameState.treasury = gameState.gdp;
-                renderTreasury();
-            }
+            gameState.gdp = gameState.selectedCountry.gdp;
+            gameState.treasury = gameState.gdp;
+            renderTreasury();
 
             document.getElementById('loading-overlay').style.display = 'none';
             document.getElementById('tactical-hud').style.display = 'block';
+            document.getElementById('temporal-engine').style.display = 'block';
+
             document.getElementById('hud-actions').innerHTML = `
                 <button class="big-neon-btn" style="border-color:#00ffff; color:#00ffff;" onclick="saveAndExit()">💾 SAVE & EXIT</button>
             `;
+
             const manageBtn = document.getElementById('main-action-btn');
             manageBtn.innerText = "MANAGE STATE";
             manageBtn.style.display = 'block';
             manageBtn.onclick = openManagement;
-            document.getElementById('temporal-engine').style.display = 'block';
+
         }, 1200);
+
     } else {
+        openManagement();
     }
 };
 
@@ -696,6 +690,21 @@ function adjustSpeed(delta) {
         document.querySelectorAll('.speed-bar').forEach((b, i) => b.classList.toggle('active', i < s)); 
     } 
 }
+
+window.addEventListener("resize", () => {
+    if (!projection || !svg) return;
+
+    projection
+    .scale(window.innerWidth / 6.5)
+    .translate([
+        window.innerWidth / 2,
+        window.innerHeight * 0.5
+    ]);
+
+svg
+    .attr("width", window.innerWidth)
+    .attr("height", window.innerHeight);
+});
 
 function gameLoop() {
     tick();
