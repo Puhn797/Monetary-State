@@ -123,6 +123,22 @@ const realWorldData = {
 };
 
 let gdpRanking = [];
+let lastTick = performance.now();
+let dayAccumulator = 0;
+let lastYear = gameState.gameDate.getFullYear();
+
+function renderClock() {
+    const el = document.getElementById("game-clock");
+    if (!el) return;
+
+    el.innerText = gameState.gameDate
+        .toLocaleDateString("en-US", {
+            month: "short",
+            day: "2-digit",
+            year: "numeric"
+        })
+        .toUpperCase();
+}
 
 function buildGdpRanking() {
     gdpRanking = [...gameState.territories]
@@ -162,10 +178,6 @@ function addToTreasury(amount) {
         MAX_TREASURY
     );
 }
-
-let lastTick = performance.now();
-let dayAccumulator = 0;
-let lastYear = gameState.gameDate.getFullYear();
 
     function getCountryGDP(country) {
     const name = country.name.common;
@@ -244,6 +256,13 @@ function addResource(name) {
             "beforeend",
             `<div class="item">${name}</div>`
         );
+}
+
+function addToTreasury(amount) {
+    gameState.treasury = Math.min(
+        gameState.treasury + amount,
+        MAX_TREASURY
+    );
 }
 
 function tick() {
@@ -485,6 +504,19 @@ function formatMoney(value) {
 const sortedList = Object.keys(realWorldData).sort((a,b) => realWorldData[b] - realWorldData[a]);
 
 let g, projection, path, svg, zoom;
+
+function beginGame() {
+    gameState.inGame = true;
+    gameState.isPaused = false;
+
+    lastTick = performance.now();
+    dayAccumulator = 0;
+    lastYear = gameState.gameDate.getFullYear();
+
+    renderClock();
+    renderTreasury();
+}
+
 async function startSimulation(isLoad) {if (!isLoad) 
     {
     initEconomy();
@@ -492,8 +524,10 @@ async function startSimulation(isLoad) {if (!isLoad)
     renderEconomyUI();
     const overlay = document.getElementById('loading-overlay');
     const barFill = document.getElementById('loading-bar-fill');
+   if (isLoad) {
     document.getElementById('menu-screen').style.display = 'none';
     document.getElementById('viewport').style.display = 'block';
+}
     overlay.style.display = 'flex';
 
     if (!svg) {
@@ -578,7 +612,6 @@ setTimeout(() => {
         renderTreasury();
 
         document.getElementById('tactical-hud').style.display = 'block';
-        document.getElementById('temporal-engine').style.display = 'block';
 
         const manageBtn = document.getElementById('main-action-btn');
         manageBtn.innerText = "MANAGE STATE";
@@ -591,13 +624,13 @@ setTimeout(() => {
 
     } else {
     randomizeJump();
-
     document.getElementById('tactical-hud').style.display = 'block';
-    document.getElementById('temporal-engine').style.display = 'block';
 
     const manageBtn = document.getElementById('main-action-btn');
     manageBtn.innerText = "ENTER STATE";
     manageBtn.style.display = 'block';
+
+    document.getElementById('temporal-engine').style.display = 'block';
         }
     }, 600);
 }
@@ -614,30 +647,29 @@ window.handleAction = () => {
         document.getElementById('loading-overlay').style.display = 'flex';
         document.getElementById('loading-text').innerText = "SYNCHRONIZING ECONOMY...";
 
-        setTimeout(() => {
-            gameState.inGame = true;
-            lastTick = performance.now();
-            dayAccumulator = 0;
+setTimeout(() => {
+    gameState.inGame = true;
+    lastTick = performance.now();
+    dayAccumulator = 0;
 
-            gameState.gdp = gameState.selectedCountry.gdp;
-            gameState.treasury = gameState.gdp;
-            renderTreasury();
+    gameState.gdp = gameState.selectedCountry.gdp;
+    gameState.treasury = gameState.gdp;
+    renderTreasury();
 
-            document.getElementById('loading-overlay').style.display = 'none';
-            document.getElementById('tactical-hud').style.display = 'block';
-            document.getElementById('temporal-engine').style.display = 'block';
+    document.getElementById('loading-overlay').style.display = 'none';
+    document.getElementById('tactical-hud').style.display = 'block';
+    document.getElementById('temporal-engine').style.display = 'block';
 
-            document.getElementById('hud-actions').innerHTML = `
-                <button class="big-neon-btn" style="border-color:#00ffff; color:#00ffff;" onclick="saveAndExit()">💾 SAVE & EXIT</button>
-            `;
+    document.getElementById('hud-actions').innerHTML = `
+        <button class="big-neon-btn" style="border-color:#00ffff; color:#00ffff;" onclick="saveAndExit()">💾 SAVE & EXIT</button>
+    `;
 
-            const manageBtn = document.getElementById('main-action-btn');
-            manageBtn.innerText = "MANAGE STATE";
-            manageBtn.style.display = 'block';
-            manageBtn.onclick = openManagement;
+    const manageBtn = document.getElementById('main-action-btn');
+    manageBtn.innerText = "MANAGE STATE";
+    manageBtn.style.display = 'block';
+    manageBtn.onclick = openManagement;
 
-        }, 1200);
-
+}, 1200);
     } else {
         openManagement();
     }
