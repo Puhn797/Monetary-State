@@ -524,10 +524,8 @@ async function startSimulation(isLoad) {if (!isLoad)
     renderEconomyUI();
     const overlay = document.getElementById('loading-overlay');
     const barFill = document.getElementById('loading-bar-fill');
-   if (isLoad) {
     document.getElementById('menu-screen').style.display = 'none';
     document.getElementById('viewport').style.display = 'block';
-}
     overlay.style.display = 'flex';
 
     if (!svg) {
@@ -629,8 +627,6 @@ setTimeout(() => {
     const manageBtn = document.getElementById('main-action-btn');
     manageBtn.innerText = "ENTER STATE";
     manageBtn.style.display = 'block';
-
-    document.getElementById('temporal-engine').style.display = 'block';
         }
     }, 600);
 }

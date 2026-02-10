@@ -24,6 +24,27 @@ z-index: 9000;
 text-align: center;
 }
 
+#dev-credits {
+    margin-top: 40px;
+    text-align: center;
+    opacity: 0.9;
+}
+
+.dev-title {
+    font-size: 1.1em;
+    letter-spacing: 5px;
+    margin-bottom: 20px;
+    color: #00ff41;
+    text-shadow: 0 0 6px #00ff41;
+}
+
+.dev-names {
+    font-size: 1.35em;
+    line-height: 1.9;
+    letter-spacing: 2px;
+    color: #00ff41;
+}
+
 #main-action-btn {
     pointer-events: auto;
     display: block;
@@ -146,6 +167,20 @@ padding: 25px;
 width: 360px;
 }
 
+#management-window {
+    display: flex;
+    flex-direction: column;
+    height: 80vh;
+    max-height: 80vh;
+}
+
+#scroll-engine {
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 60px;
+    box-sizing: border-box;
+}
+
  #left-wing-stack {
 position: absolute;
 top: 20px;
@@ -156,10 +191,27 @@ z-index: 5000;
  .side-panel {
 background: #000;
 border: 2px solid #00ff41;
-padding: 25px; display: none;
+padding: 25px;
+padding-bottom: 60px;
+display: none;
 flex-direction: column;
 width: 360px;
 margin-top: 10px;
+max-height: 80vh;
+overflow-y: hidden;
+box-sizing: border-box;
+}
+
+.side-panel > * {
+margin-bottom: 12px;
+}
+
+.side-panel::-webkit-scrollbar {
+width: 6px;
+}
+
+.side-panel::-webkit-scrollbar-thumb {
+background: #00ff41;
 }
 
  .big-neon-btn {
