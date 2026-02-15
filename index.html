@@ -16,6 +16,29 @@
         </div>
     </div>
     <div id="viewport" style="display:none;">
+        <!-- Warning Overlay -->
+        <div id="warning-overlay"></div>
+        <div id="warning-message">
+            <h2>⚠️ WARNING ⚠️</h2>
+            <p>CITIZENS IN YOUR COUNTRY ARE UNHAPPY ABOUT YOU<br>YOU CAN RISK GETTING THROWN OUT</p>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="game-over-screen">
+            <h1>GAME OVER</h1>
+            <p id="game-over-message"></p>
+            <button onclick="location.reload()">RETURN TO MENU</button>
+        </div>
+
+        <!-- News Ticker Window - Top Center -->
+        <div id="news-window">
+            <div id="news-header">📰 GLOBAL ECONOMIC NEWS</div>
+            <div id="news-ticker">
+                <div id="news-content">Initializing news feed...</div>
+            </div>
+        </div>
+
+        <!-- Time Controller - Top Right -->
         <div id="temporal-engine">
             <div id="game-clock">JAN 01, 2026</div>
             <div id="speed-controls">
@@ -29,6 +52,8 @@
                 <button class="time-btn" onclick="adjustSpeed(1)">➕</button>
             </div>
         </div>
+
+        <!-- Country Info Panel - Left Side -->
         <div id="left-wing-stack">
             <div id="tactical-hud">
                 <div id="hud-header">
@@ -36,9 +61,18 @@
                     <div id="country-name-small">SELECT STATE</div>
                 </div>
                 <div id="hud-stats">
-                    <p id="money-display">💰 GDP: ---</p>
+                    <p id="money-display">💰 TREASURY: ---</p>
                     <p id="rank-display">🏆 Rank: ---</p>
                     <p id="pop-display">👥 Pop: ---</p>
+                    <div id="happiness-gauge" style="margin-top: 15px; display: none;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <span>😊 HAPPINESS</span>
+                            <span id="happiness-percent">100%</span>
+                        </div>
+                        <div style="background: #001100; border: 1px solid #00ff41; height: 20px; border-radius: 3px; overflow: hidden;">
+                            <div id="happiness-bar" style="width: 100%; height: 100%; background: #00ff41; transition: width 0.3s, background 0.3s;"></div>
+                        </div>
+                    </div>
                 </div>
                 <div id="hud-actions">
                     <button id="btn-rand" class="big-neon-btn" onclick="randomizeJump()">RANDOMIZE</button>
@@ -46,70 +80,165 @@
                 </div>
             </div>
 
+            <!-- Country Info Panel (replaces tactical HUD when viewing other countries) -->
+            <div id="country-info-panel" style="display: none; background: #000; border: 2px solid #00ff41; padding: 25px; width: 360px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 id="info-country-name" style="color:#00ff41; margin: 0; font-size: 1.3em;"></h3>
+                    <button onclick="returnToOwnCountry()" style="background: none; border: 2px solid #00ff41; color: #00ff41; padding: 8px 15px; cursor: pointer; font-family: inherit; font-size: 1.1em;">◄ BACK</button>
+                </div>
+
+                <div style="text-align: center; margin-bottom: 15px;">
+                    <img id="info-country-flag" src="" alt="" style="width: 100px; border: 2px solid #00ff41;">
+                </div>
+
+                <div style="background: #001100; border: 1px solid #00ff41; padding: 12px; border-radius: 5px; margin-bottom: 12px;">
+                    <div style="display: flex; justify-content: space-between; margin: 8px 0; font-size: 1.05em;">
+                        <span>🏆 GDP Rank:</span> 
+                        <span style="color: #00ff41; font-weight: bold;" id="info-rank">---</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin: 8px 0; font-size: 1.05em;">
+                        <span>💰 GDP:</span> 
+                        <span style="color: #00ff41; font-weight: bold;" id="info-gdp">---</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin: 8px 0; font-size: 1.05em;">
+                        <span>👥 Population:</span> 
+                        <span style="color: #00ff41; font-weight: bold;" id="info-population">---</span>
+                    </div>
+                </div>
+
+                <div style="background: #001100; border: 1px solid #00ff41; padding: 12px; border-radius: 5px; margin-bottom: 12px;">
+                    <h4 style="color: #00ff41; margin-top: 0; margin-bottom: 12px; border-bottom: 2px solid #00ff41; padding-bottom: 6px; font-size: 1.1em;">🤝 DIPLOMACY</h4>
+                    <div style="display: flex; justify-content: space-between; margin: 8px 0;">
+                        <span>Status:</span> 
+                        <span style="font-weight: bold;" id="relation-status">---</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin: 8px 0;">
+                        <span>Trade Volume:</span> 
+                        <span style="color: #00ff41; font-weight: bold;" id="trade-volume">---</span>
+                    </div>
+                </div>
+
+                <button class="big-neon-btn" onclick="improveRelations()" style="font-size: 0.95em; padding: 12px; border-color: #00ff41; color: #00ff41;">
+                    📈 IMPROVE RELATIONS ($50B)
+                </button>
+                <button class="big-neon-btn" onclick="establishTrade()" style="font-size: 0.95em; padding: 12px; border-color: #00dddd; color: #00dddd;">
+                    🤝 ESTABLISH TRADE ($100B)
+                </button>
+                <button class="big-neon-btn" onclick="worsenRelations()" style="font-size: 0.95em; padding: 12px; border-color: #ff4444; color: #ff4444;">
+                    💢 WORSEN RELATIONS
+                </button>
+
+                <button class="big-neon-btn" onclick="closeCountryInfo()" style="margin-top: 20px;">CLOSE</button>
+            </div>
+
+            <!-- Management Window -->
             <div id="management-window" class="side-panel">
-    <h2 id="manage-country" style="color:#fff; border-bottom: 2px solid #00ff41;"></h2>
+                <h2 id="manage-country" style="color:#fff; border-bottom: 2px solid #00ff41;"></h2>
 
-    <div class="play-stats-block">
-        <div class="stat-line"><span>Inflation rate:</span> <span class="val">2.0%</span></div>
-        <div class="stat-line"><span>Unemployment rate:</span> <span class="val">3.1%</span></div>
-    </div>
-    <div id="scroll-engine">
-        <h3 class="cat-head">RESOURCES:</h3>
-        <div id="resources-list"></div>
-    </div>
+                <div class="play-stats-block">
+                    <div class="stat-line"><span>Inflation rate:</span> <span class="val">2.0%</span></div>
+                    <div class="stat-line"><span>Unemployment rate:</span> <span class="val">3.1%</span></div>
+                </div>
+                <div id="scroll-engine">
+                    <h3 class="cat-head">RESOURCES:</h3>
+                    <div id="resources-list"></div>
+                    
+                    <button class="big-neon-btn" onclick="closeManage()" style="margin-top:30px;">CLOSE INTERFACE</button>
+                </div>
+            </div>
+        </div>
 
-    <button class="big-neon-btn" onclick="closeManage()">CLOSE INTERFACE</button>
-</div>
-    </div>
+        <!-- Action Window (RIGHT SIDE) -->
+        <div id="action-window">
+            <h2 style="color:#00ff41; border-bottom: 2px solid #00ff41; margin-bottom: 20px; text-align: center;">ACTIONS</h2>
+
+            <button class="action-btn" onclick="sellResources()">
+                💰 SELL RESOURCES
+            </button>
+
+            <button class="action-btn" onclick="manageMilitary()">
+                ⚔️ MILITARY
+            </button>
+
+            <button class="action-btn" onclick="buildService()">
+                🏗️ BUILD SERVICE
+            </button>
+
+            <button class="action-btn" onclick="createGroup()">
+                👥 CREATE GROUP
+            </button>
+
+            <button class="action-btn" onclick="buyResources()">
+                🛒 BUY RESOURCES
+            </button>
+
+            <button class="action-btn" onclick="viewTaxGraph()">
+                📊 TAX GRAPH
+            </button>
+
+            <button class="action-btn" onclick="manageSanctions()">
+                🚫 SANCTIONS
+            </button>
+
+            <button class="action-btn resign-btn" onclick="giveUp()">
+                🏳️ GIVE UP
+            </button>
+
+            <button class="big-neon-btn" onclick="closeActionWindow()" style="margin-top:20px;">
+                CLOSE WINDOW
+            </button>
         </div>
 
         <button id="main-action-btn" class="fixed-corner-btn" onclick="handleAction()">ENTER STATE</button>
     </div>
 
-   <div id="menu-screen">
-    <div>
-        <div style="font-size:14px; letter-spacing:3px; margin-bottom:10px;">
-            INTERACTIVE ECONOMIC GAME v1.0.0
-        </div>
+    <!-- Main Menu Screen -->
+    <div id="menu-screen">
+        <div>
+            <div style="font-size:14px; letter-spacing:3px; margin-bottom:10px;">
+                INTERACTIVE ECONOMIC GAME v1.2.8
+            </div>
 
-        <h1 id="main-title">MONETARY STATE</h1>
+            <h1 id="main-title">MONETARY STATE</h1>
 
-        <button class="play-launch" onclick="startSimulation(false)">
-            PLAY
-        </button>
+            <button class="play-launch" onclick="startSimulation(false)">
+                PLAY
+            </button>
 
-        <div id="save-window" style="margin-top:40px; display:none;">
-            <div style="border:2px solid #00ff41; padding:25px; width:350px; margin:auto;">
-                <div>SAVED GAME</div>
-                <div id="save-country">COUNTRY</div>
-                <div id="save-date">DATE</div>
+            <div id="save-window" style="margin-top:40px; display:none;">
+                <div style="border:2px solid #00ff41; padding:25px; width:350px; margin:auto;">
+                    <div style="font-size:1.2em; margin-bottom:15px;">SAVED GAME</div>
+                    <div id="save-country" style="font-size:1.5em; margin:10px 0; font-weight:bold;">COUNTRY</div>
+                    <div id="save-date" style="font-size:1.1em; margin:10px 0;">DATE</div>
 
-                <button id="load-save-btn" class="play-launch" style="margin-top:20px;">
-                    LOAD SAVE
-                </button>
+                    <button id="load-save-btn" class="play-launch" style="margin-top:20px;">
+                        LOAD SAVE
+                    </button>
+                </div>
+            </div>
+
+            <hr style="margin:60px auto; width:60%; border:1px solid #00ff41;">
+
+            <div id="dev-credits">
+                <div class="dev-title">DEVELOPED BY</div>
+                <div class="dev-names">
+                    Kunanon Lerdsakunjinda (Kor) No. 2 M.3/11<br>
+                    Taweesak Poonoi (Tonkaow) No. 5 M.3/11<br>
+                    Tanaphat Prempee (Namo) No. 7 M.3/11<br>
+                    Asama Noiuthai (Puhn) No. 13 M.3/11
+                </div>
             </div>
         </div>
-
-        <hr style="margin:60px auto; width:60%; border:1px solid #00ff41;">
-
-        <div id="dev-credits">
-        <div class="dev-title">DEVELOPED BY</div>
-        <div class="dev-names">
-        Kunanon Lerdsakunjinda (Kor) No. 2 M.3/11<br>
-        Taweesak Poonoi (Tonkaow) No. 5 M.3/11<br>
-        Tanaphat Prempee (Namo) No. 7 M.3/11<br>
-        Asama Noiuthai (Puhn) No. 13 M.3/11
-        </div>
     </div>
-</div>
-<script src="game.js"></script>
-<script>
-document.addEventListener("DOMContentLoaded", () => {
-    const win = document.getElementById("management-window");
-    if (win) {
-        win.style.display = "none";
-    }
-});
-</script>
+
+    <script src="game.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const win = document.getElementById("management-window");
+            if (win) {
+                win.style.display = "none";
+            }
+        });
+    </script>
 </body>
 </html>
