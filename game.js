@@ -1,5 +1,5 @@
 /**
- * MONETARY STATE - THE TOTAL GLOBAL ECONOMY BUILD V1.2.7
+ * MONETARY STATE - THE TOTAL GLOBAL ECONOMY BUILD V1.0.0
  * Features: Integrated Persistence (Save/Load), Top-Right Time Controller, 
  * Initial Loading Screen, and Territory Markers.
  * FIXED: Load save functionality
