@@ -1,5 +1,5 @@
 /**
- * MONETARY STATE - THE TOTAL GLOBAL ECONOMY BUILD V1.0.0
+ * MONETARY STATE - THE TOTAL GLOBAL ECONOMY BUILD V1.2.7
  * Features: Integrated Persistence (Save/Load), Top-Right Time Controller, 
  * Initial Loading Screen, and Territory Markers.
  * FIXED: Load save functionality
@@ -612,8 +612,8 @@ function generateNews() {
         .slice(0, 30);
     const partner = partners[Math.floor(Math.random() * partners.length)]?.name.common || "Global Partners";
     
-    // Get random resource
-    const resourceCategories = Object.keys(economyState.resources);
+    // Get random resource (exclude Labor category for trade news)
+    const resourceCategories = Object.keys(economyState.resources).filter(cat => cat !== "Labor");
     const resourceCategory = resourceCategories[Math.floor(Math.random() * resourceCategories.length)];
     const resources = economyState.resources[resourceCategory];
     const resource = resources[Math.floor(Math.random() * resources.length)];
@@ -791,6 +791,27 @@ function initEconomy() {
 
         economyState.values[category] = {};
 
+        // Special handling for Supply category
+        if (category === "Supply") {
+            items.forEach((item) => {
+                if (item === "Electricity" || item === "Water") {
+                    // Electricity and Water start at 100%
+                    economyState.values[category][item] = {
+                        percent: 100,
+                        change: 0  // Start at 0, not random
+                    };
+                } else if (item === "Waste") {
+                    // Waste is randomized between 1-100%
+                    economyState.values[category][item] = {
+                        percent: Math.floor(Math.random() * 100) + 1,
+                        change: 0  // Start at 0, not random
+                    };
+                }
+            });
+            continue; // Skip normal processing for Supply
+        }
+
+        // Normal processing for other categories
         // Generate random percentages that add up to 100%
         const randomValues = [];
         let total = 0;
@@ -808,7 +829,7 @@ function initEconomy() {
             
             economyState.values[category][item] = {
                 percent: normalizedPercent,
-                change: randomChange(category)
+                change: 0  // Start at 0, not random
             };
         });
         
@@ -859,6 +880,24 @@ function generateCategoryValues(items) {
 
 function updateEconomy() {
     for (const category in economyState.values) {
+        // Special handling for Supply - no normalization needed
+        if (category === "Supply") {
+            // Update each item independently (no total = 100% constraint)
+            for (const item in economyState.values[category]) {
+                const data = economyState.values[category][item];
+                const delta = randomDelta();
+
+                data.change = delta;
+                data.percent += delta;
+
+                // Keep within bounds
+                if (data.percent < 0) data.percent = 0;
+                if (data.percent > 100) data.percent = 100;
+            }
+            continue; // Skip normalization for Supply
+        }
+
+        // Normal processing for other categories
         // Update each item's percentage
         for (const item in economyState.values[category]) {
             const data = economyState.values[category][item];
@@ -1909,6 +1948,106 @@ window.giveUp = () => {
     
     // Add to news
     gameState.newsHeadlines.push(`📰 ${gameState.selectedCountry.name.common} president has resigned from office!`);
+};
+
+// ==================== CHANGELOG FUNCTIONS ====================
+
+const changelogVersions = [
+    {
+        version: "v1.0.1 - Remaking the news and resources system",
+        changes: [
+            "📄 Fixing the news story generation logic",
+            "📊 Fixing the resources system to be more realistic"
+        ]
+    },
+    {
+        version: "v1.0.0 - Initial Release",
+        changes: [
+            "🌍 100+ countries with real (maybe) GDP data",
+            "💰 Rank-based starting treasury system",
+            "📊 Dynamic economy with resources, inflation, unemployment",
+            "🕐 Time controls (pause, 1x-5x speed)",
+            "🗺️ Interactive world map",
+            "💾 Save and load functionality",
+            "🎮 Management window with scrollable resources",
+            "🎯 Country selection system",
+            "🎨 Full-width news bar design"
+        ]
+    }
+];
+
+let currentChangelogIndex = 0;
+
+function renderChangelogVersion() {
+    const version = changelogVersions[currentChangelogIndex];
+    const display = document.getElementById('changelog-display');
+    
+    if (!display) return;
+    
+    const changesList = version.changes.map(change => `<li>${change}</li>`).join('');
+    
+    display.innerHTML = `
+        <h2>${version.version}</h2>
+        <ul>${changesList}</ul>
+    `;
+    
+    // Update counter
+    const currentNum = document.getElementById('current-version-num');
+    const totalNum = document.getElementById('total-versions');
+    if (currentNum) currentNum.innerText = currentChangelogIndex + 1;
+    if (totalNum) totalNum.innerText = changelogVersions.length;
+    
+    // Update button states
+    const prevBtn = document.getElementById('prev-version-btn');
+    const nextBtn = document.getElementById('next-version-btn');
+    
+    if (prevBtn) {
+        prevBtn.disabled = currentChangelogIndex === 0;
+    }
+    
+    if (nextBtn) {
+        nextBtn.disabled = currentChangelogIndex === changelogVersions.length - 1;
+    }
+}
+
+window.openChangelog = () => {
+    const mainMenu = document.getElementById('main-menu');
+    const changelogMenu = document.getElementById('changelog-menu');
+    
+    // COMPLETELY REPLACE main menu
+    if (mainMenu) mainMenu.style.display = 'none';
+    if (changelogMenu) changelogMenu.style.display = 'block';
+    
+    // Reset to first version and render
+    currentChangelogIndex = 0;
+    renderChangelogVersion();
+    
+    console.log("Changelog opened - main menu replaced");
+};
+
+window.closeChangelog = () => {
+    const mainMenu = document.getElementById('main-menu');
+    const changelogMenu = document.getElementById('changelog-menu');
+    
+    // RESTORE main menu
+    if (changelogMenu) changelogMenu.style.display = 'none';
+    if (mainMenu) mainMenu.style.display = 'block';
+    
+    console.log("Changelog closed - main menu restored");
+};
+
+window.nextVersion = () => {
+    if (currentChangelogIndex < changelogVersions.length - 1) {
+        currentChangelogIndex++;
+        renderChangelogVersion();
+    }
+};
+
+window.previousVersion = () => {
+    if (currentChangelogIndex > 0) {
+        currentChangelogIndex--;
+        renderChangelogVersion();
+    }
 };
 function adjustSpeed(delta) { 
     let s = gameState.gameSpeed + delta; 

@@ -26,6 +26,19 @@ body {
     text-align: center;
 }
 
+#changelog-menu {
+    position: fixed;
+    inset: 0;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    background: #000;
+    z-index: 9500;
+    text-align: center;
+    overflow-y: auto;
+    padding: 40px 20px;
+}
+
 #dev-credits {
     margin-top: 40px;
     text-align: center;
@@ -74,6 +87,93 @@ body {
 .play-launch:hover {
     background: #00ff41;
     color: #000;
+}
+
+.changelog-btn {
+    width: 80px;
+    height: 80px;
+    padding: 0;
+    font-size: 2.5em;
+    font-weight: bold;
+    border: 3px solid #00ff41;
+    color: #00ff41;
+    background: none;
+    cursor: pointer;
+    font-family: 'Courier New', monospace;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+}
+
+.changelog-btn:hover {
+    background: #00ff41;
+    color: #000;
+    transform: scale(1.1);
+}
+
+.changelog-version {
+    background: #001100;
+    border: 2px solid #00ff41;
+    padding: 25px;
+    margin-bottom: 30px;
+    border-radius: 8px;
+}
+
+.changelog-version h2 {
+    color: #00ff41;
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.8em;
+}
+
+.changelog-version ul {
+    list-style: none;
+    padding-left: 0;
+    margin: 0;
+}
+
+.changelog-version li {
+    color: #00ff41;
+    margin: 10px 0;
+    font-size: 1.1em;
+    line-height: 1.6;
+    padding-left: 30px;
+    position: relative;
+}
+
+.changelog-version li:before {
+    content: "▸";
+    position: absolute;
+    left: 0;
+    color: #00ff41;
+}
+
+.nav-btn {
+    background: #000;
+    border: 3px solid #00ff41;
+    color: #00ff41;
+    width: 60px;
+    height: 60px;
+    font-size: 2em;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.nav-btn:hover:not(:disabled) {
+    background: #00ff41;
+    color: #000;
+    transform: scale(1.1);
+}
+
+.nav-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
 }
 
 /* ==================== LOADING OVERLAY ==================== */
@@ -389,7 +489,7 @@ body {
 #scroll-engine {
     flex: 1;
     overflow-y: auto;
-    padding-bottom: 500px;
+    padding-bottom: 80px;
     padding-right: 10px;
     box-sizing: border-box;
 }

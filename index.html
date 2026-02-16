@@ -196,14 +196,17 @@
     <div id="menu-screen">
         <div>
             <div style="font-size:14px; letter-spacing:3px; margin-bottom:10px;">
-                INTERACTIVE ECONOMIC GAME v1.0.0
+                INTERACTIVE ECONOMIC GAME v1.0.1
             </div>
 
             <h1 id="main-title">MONETARY STATE</h1>
 
-            <button class="play-launch" onclick="startSimulation(false)">
-                PLAY
-            </button>
+            <div style="display: flex; gap: 20px; justify-content: center; align-items: center;">
+                <button class="play-launch" onclick="startSimulation(false)">
+                    PLAY
+                </button>
+                <button class="changelog-btn" onclick="openChangelog()">?</button>
+            </div>
 
             <div id="save-window" style="margin-top:40px; display:none;">
                 <div style="border:2px solid #00ff41; padding:25px; width:350px; margin:auto;">
@@ -228,6 +231,37 @@
                     Asama Noiuthai (Puhn) No. 13 M.3/11
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Changelog Menu (SEPARATE FROM menu-screen, REPLACES it) -->
+    <div id="changelog-menu">
+        <div style="max-width: 900px; margin: 0 auto;">
+            <h1 style="color:#00ff41; margin-bottom: 40px;">📋 CHANGELOG</h1>
+            
+            <!-- Version Display -->
+            <div id="changelog-display" class="changelog-version">
+                <!-- Content loaded dynamically -->
+            </div>
+
+            <!-- Navigation Controls -->
+            <div style="display: flex; justify-content: center; align-items: center; gap: 30px; margin-top: 40px;">
+                <button class="nav-btn" id="prev-version-btn" onclick="previousVersion()">
+                    &lt;
+                </button>
+                
+                <div style="color: #00ff41; font-size: 1.2em;">
+                    <span id="current-version-num">1</span> / <span id="total-versions">4</span>
+                </div>
+                
+                <button class="nav-btn" id="next-version-btn" onclick="nextVersion()">
+                    &gt;
+                </button>
+            </div>
+
+            <button class="play-launch" onclick="closeChangelog()" style="margin-top: 40px;">
+                CLOSE
+            </button>
         </div>
     </div>
 
