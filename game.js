@@ -1954,6 +1954,12 @@ window.giveUp = () => {
 
 const changelogVersions = [
     {
+        version: "v1.0.2 - Fixing scroll issues",
+        changes: [
+            "⬇️ Fixed scrolling in changelog window",
+        ]
+    },
+    {
         version: "v1.0.1 - Remaking the news and resources system",
         changes: [
             "📄 Fixing the news story generation logic",
