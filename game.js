@@ -1956,7 +1956,7 @@ const changelogVersions = [
     {
         version: "v1.0.2 - Fixing scroll issues",
         changes: [
-            "⬇️ Fixed scrolling in changelog window",
+            "⬇️ Fixed scrolling in management window",
         ]
     },
     {
