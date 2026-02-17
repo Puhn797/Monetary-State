@@ -1522,9 +1522,10 @@ window.giveUp = () => {
 // ============================================================
 const changelogVersions = [
     {
-        version: "v1.1.0 - 1st Major Update",
+        version: "v1.1.0 alpha - 1st Major Update",
         changes: [
-            "💰 Added buying & selling resources features"
+            "💰 Added buying & selling resources features",
+            "More coming soon in future updates!"
         ]
     },
     {
