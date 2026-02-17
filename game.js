@@ -1,5 +1,5 @@
 /**
- * MONETARY STATE - THE TOTAL GLOBAL ECONOMY BUILD V1.2.7
+ * MONETARY STATE - THE TOTAL GLOBAL ECONOMY BUILD V1.0.2
  * Features: Integrated Persistence (Save/Load), Top-Right Time Controller, 
  * Initial Loading Screen, and Territory Markers.
  * FIXED: Load save functionality
@@ -18,114 +18,42 @@ let gameState = {
     saveData: JSON.parse(localStorage.getItem('monetary_state_save')) || null,
     newsHeadlines: [],
     newsIndex: 0,
-    diplomaticRelations: {}, // Store relations with other countries
-    happiness: 100, // Citizen happiness gauge (0-100)
-    warWith: [] // Countries we're at war with
+    diplomaticRelations: {},
+    happiness: 100,
+    warWith: [],
+    viewingCountry: null,
+    resourceCapacity: {},  // { "Natural Gas & Oil": 1_000_000, ... } tonnes per category
+    resourceStock: {}      // { "Natural Gas & Oil": { "Oil": 420000, ... }, ... }
 };
 
 const MAX_TREASURY = 9_000_000_000;
 
 const realWorldData = {
-    "United States": 31821,
-    "China": 20651,
-    "Germany": 5328,
-    "India": 4506,
-    "Japan": 4464,
-    "United Kingdom": 4226,
-    "France": 3559,
-    "Italy": 2702,
-    "Russia": 2509,
-    "Canada": 2421,
-    "Brazil": 2293,
-    "Spain": 2042,
-    "Mexico": 2031,
-    "Australia": 1948,
-    "South Korea": 1937,
-    "Turkey" : 1580,
-    "Indonesia" : 1550,
-    "Netherlands" : 1410,
-    "Saudi Arabia" : 1320,
-    "Poland" : 1110,
-    "Switzerland" : 1070,
-    "Taiwan" : 971,
-    "Belgium" : 761,
-    "Ireland" : 750,
-    "Sweden" : 712,
-    "Argentina" : 668,
-    "Israel" : 666,
-    "Singapore" : 606,
-    "Austria" : 604,
-    "United Arab Emirates" : 601,
-    "Thailand": 561,
-    "Norway" : 548,
-    "Philippines": 533,
-    "Bangladesh" : 519,
-    "Vietnam": 511,
-    "Malaysia": 505,
-    "Denmark" : 500,
-    "Colombia" : 462,
-    "Hong Kong" : 447,
-    "Romania" : 445,
-    "South Africa" : 444,
-    "Czechia" : 417,
-    "Pakistan" : 411,
-    "Egypt" : 400,
-    "Iran" : 376,
-    "Portugal" : 365,
-    "Chile" : 363,
-    "Finland" : 336,
-    "Nigeria" : 334,
-    "Peru" : 327,
-    "Kazakhstan" : 320,
-    "Greece" : 305,
-    "Algeria" : 285,
-    "New Zealand" : 281,
-    "Iraq" : 274,
-    "Hungary" : 270,
-    "Qatar" : 239,
-    "Ukraine" : 224,
-    "Cuba" : 202,
-    "Morocco" : 196,
-    "Slovakia" : 168,
-    "Kuwait" : 163,
-    "Uzbekistan" : 159,
-    "Bulgaria" : 142,
-    "Kenya" : 141,
-    "Dominican Republic" : 138,
-    "Ecuador" : 135,
-    "Guatemala" : 130,
-    "Puerto Rico" : 129,
-    "Ethiopia" : 126,
-    "Ghana" : 113.49,
-    "Croatia" : 113.13,
-    "Serbia" : 112,
-    "Ivory Coast" : 111,
-    "Angola" : 110,
-    "Costa Rica" : 109.14,
-    "Oman" : 109,
-    "Luxembourg" : 108,
-    "Lithuania" : 105,
-    "Sri Lanka" : 99,
-    "Panama" : 96,
-    "Tanzania" : 95,
-    "Uruguay" : 91.64,
-    "Belarus" : 91,
-    "DR Congo" : 88,
-    "Slovenia" : 86,
-    "Azerbaijan" : 80.02,
-    "Venezuela" : 80,
-    "Turkmenistan" : 77,
-    "Uganda" : 72,
-    "Cameroon" : 68,
-    "Myanmar" : 65,
-    "Tunisia" : 60,
-    "Jordan" : 59,
-    "Bolivia" : 57,
-    "Zimbabwe" : 55.43,
-    "Macao" : 55,
-    "Latvia" : 52,
-    "Paraguay" : 51.67,
-    "Cambodia" : 51.51,
+    "United States": 31821, "China": 20651, "Germany": 5328, "India": 4506,
+    "Japan": 4464, "United Kingdom": 4226, "France": 3559, "Italy": 2702,
+    "Russia": 2509, "Canada": 2421, "Brazil": 2293, "Spain": 2042,
+    "Mexico": 2031, "Australia": 1948, "South Korea": 1937, "Turkey": 1580,
+    "Indonesia": 1550, "Netherlands": 1410, "Saudi Arabia": 1320, "Poland": 1110,
+    "Switzerland": 1070, "Taiwan": 971, "Belgium": 761, "Ireland": 750,
+    "Sweden": 712, "Argentina": 668, "Israel": 666, "Singapore": 606,
+    "Austria": 604, "United Arab Emirates": 601, "Thailand": 561, "Norway": 548,
+    "Philippines": 533, "Bangladesh": 519, "Vietnam": 511, "Malaysia": 505,
+    "Denmark": 500, "Colombia": 462, "Hong Kong": 447, "Romania": 445,
+    "South Africa": 444, "Czechia": 417, "Pakistan": 411, "Egypt": 400,
+    "Iran": 376, "Portugal": 365, "Chile": 363, "Finland": 336,
+    "Nigeria": 334, "Peru": 327, "Kazakhstan": 320, "Greece": 305,
+    "Algeria": 285, "New Zealand": 281, "Iraq": 274, "Hungary": 270,
+    "Qatar": 239, "Ukraine": 224, "Cuba": 202, "Morocco": 196,
+    "Slovakia": 168, "Kuwait": 163, "Uzbekistan": 159, "Bulgaria": 142,
+    "Kenya": 141, "Dominican Republic": 138, "Ecuador": 135, "Guatemala": 130,
+    "Puerto Rico": 129, "Ethiopia": 126, "Ghana": 113.49, "Croatia": 113.13,
+    "Serbia": 112, "Ivory Coast": 111, "Angola": 110, "Costa Rica": 109.14,
+    "Oman": 109, "Luxembourg": 108, "Lithuania": 105, "Sri Lanka": 99,
+    "Panama": 96, "Tanzania": 95, "Uruguay": 91.64, "Belarus": 91,
+    "DR Congo": 88, "Slovenia": 86, "Azerbaijan": 80.02, "Venezuela": 80,
+    "Turkmenistan": 77, "Uganda": 72, "Cameroon": 68, "Myanmar": 65,
+    "Tunisia": 60, "Jordan": 59, "Bolivia": 57, "Zimbabwe": 55.43,
+    "Macao": 55, "Latvia": 52, "Paraguay": 51.67, "Cambodia": 51.51
 };
 
 let gdpRanking = [];
@@ -136,13 +64,8 @@ let lastYear = gameState.gameDate.getFullYear();
 function renderClock() {
     const el = document.getElementById("game-clock");
     if (!el) return;
-
     el.innerText = gameState.gameDate
-        .toLocaleDateString("en-US", {
-            month: "short",
-            day: "2-digit",
-            year: "numeric"
-        })
+        .toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
         .toUpperCase();
 }
 
@@ -150,48 +73,30 @@ function buildGdpRanking() {
     gdpRanking = [...gameState.territories]
         .filter(c => typeof c.gdp === "number")
         .sort((a, b) => b.gdp - a.gdp)
-        .map((c, index) => ({
-            name: c.name.common,
-            gdp: c.gdp,
-            rank: index < 100 ? index + 1 : "100+"
-        }));
+        .map((c, index) => ({ name: c.name.common, gdp: c.gdp, rank: index < 100 ? index + 1 : "100+" }));
 }
 
 function getCountryRank(countryName) {
     const entry = gdpRanking.find(c => c.name === countryName);
-
     if (!entry) return "100+";
     return entry.rank;
 }
 
 function restoreTerritoriesGDP(savedList) {
     if (!savedList) return;
-
-    const map = new Map(
-        savedList.map(t => [t.name, t.gdp])
-    );
-
-    gameState.territories.forEach(c => {
-        if (map.has(c.name.common)) {
-            c.gdp = map.get(c.name.common);
-        }
-    });
+    const map = new Map(savedList.map(t => [t.name, t.gdp]));
+    gameState.territories.forEach(c => { if (map.has(c.name.common)) c.gdp = map.get(c.name.common); });
 }
 
-    function getCountryGDP(country) {
+function getCountryGDP(country) {
     const name = country.name.common;
-
-    if (realWorldData[name] !== undefined) {
-        return Math.floor(realWorldData[name] * 1000);
-    }
-
+    if (realWorldData[name] !== undefined) return Math.floor(realWorldData[name] * 1000);
     return Math.floor((country.population / 1_000_000) * 5000);
 }
 
 function renderTreasury() {
     const el = document.getElementById('money-display');
     if (!el) return;
-
     if (gameState.treasury >= MAX_TREASURY) {
         el.innerText = "💰 TREASURY: MAX (≈9 QUADRILLION)";
     } else {
@@ -203,7 +108,7 @@ function assignRealGDP() {
     gameState.territories.forEach(c => {
         const name = c.name.common;
         if (realWorldData[name] !== undefined) {
-            c.gdp = Math.floor(realWorldData[name] * 1000); 
+            c.gdp = Math.floor(realWorldData[name] * 1000);
         } else {
             c.gdp = Math.floor((c.population / 1_000_000) * 5000);
         }
@@ -211,281 +116,385 @@ function assignRealGDP() {
 }
 
 function calculateStartingTreasury(gdp, rank) {
-    // Base treasury is a percentage of GDP
-    // Higher-ranked countries get better starting reserves
-    
     let treasuryMultiplier;
-    
-    if (rank <= 5) {
-        // Top 5: 40-50% of GDP (super powers)
-        treasuryMultiplier = 0.40 + (6 - rank) * 0.02;
-    } else if (rank <= 10) {
-        // Top 10: 30-40% of GDP (major powers)
-        treasuryMultiplier = 0.30 + (11 - rank) * 0.01;
-    } else if (rank <= 20) {
-        // Top 20: 25-30% of GDP (strong economies)
-        treasuryMultiplier = 0.25 + (21 - rank) * 0.005;
-    } else if (rank <= 50) {
-        // Top 50: 15-25% of GDP (developed economies)
-        treasuryMultiplier = 0.15 + (51 - rank) * 0.003;
-    } else if (rank <= 100) {
-        // Top 100: 8-15% of GDP (developing economies)
-        treasuryMultiplier = 0.08 + (101 - rank) * 0.0014;
-    } else {
-        // Below 100: 5-8% of GDP (smaller economies)
-        treasuryMultiplier = 0.05 + Math.random() * 0.03;
-    }
-    
+    if (rank <= 5)        treasuryMultiplier = 0.40 + (6 - rank) * 0.02;
+    else if (rank <= 10)  treasuryMultiplier = 0.30 + (11 - rank) * 0.01;
+    else if (rank <= 20)  treasuryMultiplier = 0.25 + (21 - rank) * 0.005;
+    else if (rank <= 50)  treasuryMultiplier = 0.15 + (51 - rank) * 0.003;
+    else if (rank <= 100) treasuryMultiplier = 0.08 + (101 - rank) * 0.0014;
+    else                  treasuryMultiplier = 0.05 + Math.random() * 0.03;
     return Math.floor(gdp * treasuryMultiplier);
 }
 
 function selectLocation(data) {
-    // Block Antarctica completely
-    if (data.name.common === "Antarctica") {
-        console.warn("Antarctica is not selectable");
-        return;
-    }
-    
-    if (!gameState.territories.includes(data)) {
-        console.warn("Selected country not from territories array");
-    }
-    
+    if (data.name.common === "Antarctica") return;
+    if (!gameState.territories.includes(data)) console.warn("Selected country not from territories array");
+
     gameState.selectedCountry = data;
-    
-    if (typeof data.gdp !== "number" || data.gdp <= 0) {
-        data.gdp = getCountryGDP(data);
-    }
-    
+    if (typeof data.gdp !== "number" || data.gdp <= 0) data.gdp = getCountryGDP(data);
     gameState.gdp = data.gdp;
-    
-    // Calculate starting treasury based on GDP and rank
+
     buildGdpRanking();
     const rank = getCountryRank(data.name.common);
     const numericRank = typeof rank === 'number' ? rank : 100;
-    
     gameState.treasury = calculateStartingTreasury(gameState.gdp, numericRank);
     renderTreasury();
-        
-    document.getElementById('country-name-small').innerText =
-        data.name.common.toUpperCase();
 
-    document.getElementById('country-flag').src =
-        `https://flagcdn.com/w160/${data.cca2.toLowerCase()}.png`;
-
-    document.getElementById('rank-display').innerText =
-        `🏆 GDP RANK: #${rank}`;
-
-    document.getElementById('pop-display').innerText =
-        `👥 Pop: ${data.population.toLocaleString()}`;
+    document.getElementById('country-name-small').innerText = data.name.common.toUpperCase();
+    document.getElementById('country-flag').src = `https://flagcdn.com/w160/${data.cca2.toLowerCase()}.png`;
+    document.getElementById('rank-display').innerText = `🏆 GDP RANK: #${rank}`;
+    document.getElementById('pop-display').innerText = `👥 Pop: ${data.population.toLocaleString()}`;
 
     const coords = projection([data.latlng[1], data.latlng[0]]);
-    svg.transition()
-        .duration(1000)
-        .call(
-            zoom.transform,
-            d3.zoomIdentity
-                .translate(window.innerWidth / 2, window.innerHeight / 2)
-                .scale(6)
-                .translate(-coords[0], -coords[1])
-        );
-}
-
-function addResource(name) {
-    document.getElementById("resources-list")
-        .insertAdjacentHTML(
-            "beforeend",
-            `<div class="item">${name}</div>`
-        );
-}
-
-function addToTreasury(amount) {
-    gameState.treasury = Math.min(
-        gameState.treasury + amount,
-        MAX_TREASURY
+    svg.transition().duration(1000).call(
+        zoom.transform,
+        d3.zoomIdentity.translate(window.innerWidth / 2, window.innerHeight / 2).scale(6).translate(-coords[0], -coords[1])
     );
 }
 
+function addToTreasury(amount) {
+    gameState.treasury = Math.min(gameState.treasury + amount, MAX_TREASURY);
+}
+
+function formatMoney(value) {
+    if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(2)} Trillion`;
+    if (value >= 1_000)     return `$${(value / 1_000).toFixed(2)} Billion`;
+    return `$${value.toFixed(2)} Million`;
+}
+
+function formatTonnes(t) {
+    if (t >= 1_000_000) return `${(t / 1_000_000).toFixed(2)}M t`;
+    if (t >= 1_000)     return `${(t / 1_000).toFixed(1)}K t`;
+    return `${Math.floor(t).toLocaleString()} t`;
+}
+
+// ============================================================
+// RESOURCE STORAGE & PRICING
+// ============================================================
+const RESOURCE_CATEGORIES_TRADABLE = ["Natural Gas & Oil", "Minerals & Ores", "Non-metal", "Agriculture"];
+const DEFAULT_CAPACITY = 1_000_000; // 1 million tonnes per category
+
+// Price in $M per tonne (game money units)
+const RESOURCE_PRICE_PER_TONNE = {
+    // Natural Gas & Oil
+    "Natural Gas": 0.00040, "Oil": 0.00060, "Coal": 0.00008,
+    // Minerals & Ores
+    "Lithium": 0.03000, "Cobalt": 0.05000, "Nickel": 0.01400,
+    "Graphite": 0.00100, "Rare-earth": 0.10000, "Iron": 0.00010,
+    "Copper": 0.00900, "Aluminum": 0.00200, "Manganese": 0.00030,
+    "Quartz": 0.00005, "Potash": 0.00030, "Phosphorus": 0.00040,
+    "Sulfur": 0.00008, "Gold": 60.0, "Silver": 0.80,
+    "Platinum": 30.0, "Silicon": 0.00200, "Tantalum": 0.15000,
+    "Tellurium": 0.06000, "Diamond": 500.0, "Uranium": 0.12000,
+    // Non-metal
+    "Sand": 0.000010, "Gravel": 0.000010, "Limestone": 0.000015,
+    "Clay": 0.000020, "Gypsum": 0.000030, "Marble": 0.000500,
+    "Granite": 0.000300, "Salt": 0.000040, "Carbon": 0.002000,
+    // Agriculture
+    "Water": 0.000001, "Vegetation": 0.000200, "Meat": 0.004000
+};
+
+function initResourceStorage() {
+    for (const category of RESOURCE_CATEGORIES_TRADABLE) {
+        if (!gameState.resourceCapacity[category]) {
+            gameState.resourceCapacity[category] = DEFAULT_CAPACITY;
+        }
+        if (!gameState.resourceStock[category]) {
+            gameState.resourceStock[category] = {};
+        }
+        economyState.resources[category].forEach(item => {
+            if (gameState.resourceStock[category][item] === undefined) {
+                const pct = (economyState.values[category]?.[item]?.percent ?? 0) / 100;
+                gameState.resourceStock[category][item] = Math.floor(pct * gameState.resourceCapacity[category]);
+            }
+        });
+    }
+}
+
+function getCategoryUsed(category) {
+    const stock = gameState.resourceStock[category];
+    if (!stock) return 0;
+    return Object.values(stock).reduce((s, v) => s + v, 0);
+}
+
+// Sync % display from actual stock numbers
+function syncResourcePercents(category) {
+    const total = getCategoryUsed(category);
+    if (total <= 0) {
+        // All zero – set all to 0
+        economyState.resources[category].forEach(item => {
+            if (economyState.values[category]?.[item]) {
+                economyState.values[category][item].change = -economyState.values[category][item].percent;
+                economyState.values[category][item].percent = 0;
+            }
+        });
+        return;
+    }
+    economyState.resources[category].forEach(item => {
+        if (economyState.values[category]?.[item]) {
+            const newPct = Math.round((gameState.resourceStock[category][item] / total) * 100);
+            economyState.values[category][item].change = newPct - economyState.values[category][item].percent;
+            economyState.values[category][item].percent = newPct;
+        }
+    });
+    // Fix rounding drift
+    const items = economyState.resources[category];
+    const sum = items.reduce((s, item) => s + (economyState.values[category]?.[item]?.percent ?? 0), 0);
+    if (sum !== 100 && economyState.values[category]?.[items[0]]) {
+        economyState.values[category][items[0]].percent += (100 - sum);
+    }
+}
 function tick() {
     try {
         const now = performance.now();
         const delta = now - lastTick;
         lastTick = now;
-        
-        // Debug logging for time issues
-        if (delta > 5000) {
-            console.warn("Large time gap detected:", delta, "ms");
-            console.log("Game state:", {
-                inGame: gameState.inGame,
-                isPaused: gameState.isPaused,
-                gameSpeed: gameState.gameSpeed
-            });
-        }
-        
-        if (!gameState.inGame || gameState.isPaused) {
-            // Don't accumulate time when paused
-            return;
-        }
-        
+
+        if (delta > 5000) console.warn("Large time gap detected:", delta, "ms");
+        if (!gameState.inGame || gameState.isPaused) return;
+
         dayAccumulator += (delta / 1000) * gameState.gameSpeed;
 
         while (dayAccumulator >= 1) {
-            gameState.gameDate.setDate(
-                gameState.gameDate.getDate() + 1
-            );
+            gameState.gameDate.setDate(gameState.gameDate.getDate() + 1);
             dayAccumulator--;
 
             const clockEl = document.getElementById("game-clock");
             if (clockEl) {
-                clockEl.innerText = gameState.gameDate.toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "2-digit",
-                    year: "numeric"
-                }).toUpperCase();
+                clockEl.innerText = gameState.gameDate
+                    .toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
+                    .toUpperCase();
             }
 
             const currentYear = gameState.gameDate.getFullYear();
 
-           if (currentYear !== lastYear) {
-        lastYear = currentYear;
+            if (currentYear !== lastYear) {
+                lastYear = currentYear;
 
-        const growth = Math.floor(gameState.gdp * 0.03);
-        gameState.gdp += growth;
+                const growth = Math.floor(gameState.gdp * 0.03);
+                gameState.gdp += growth;
+                if (gameState.selectedCountry) gameState.selectedCountry.gdp = gameState.gdp;
 
-        if (gameState.selectedCountry) {
-            gameState.selectedCountry.gdp = gameState.gdp;
-        }
+                gameState.territories.forEach(c => {
+                    if (c !== gameState.selectedCountry && typeof c.gdp === "number")
+                        c.gdp += Math.floor(c.gdp * 0.015);
+                });
 
-        gameState.territories.forEach(c => {
-            if (c !== gameState.selectedCountry && typeof c.gdp === "number") {
-                c.gdp += Math.floor(c.gdp * 0.015);
-            }
-        });
+                const gdpIncome = Math.floor(gameState.gdp * 0.02);
+                addToTreasury(gdpIncome);
 
-        const gdpIncome = Math.floor(gameState.gdp * 0.02);
-        addToTreasury(gdpIncome);
-        
-        // Update happiness based on various factors
-        updateHappiness();
-        
-        // Check for game over
-        if (gameState.happiness <= 0) {
-            triggerGameOver();
-            return; // Stop further processing
-        }
-        
-        buildGdpRanking();
+                updateHappiness();
+                if (gameState.happiness <= 0) { triggerGameOver(); return; }
 
-        updateHud();
-        renderTreasury();
+                buildGdpRanking();
+                updateHud();
+                renderTreasury();
+                renderEconomyUI();
 
-        updateEconomy();
-        renderEconomyUI();
-        
-        // Generate news based on actual game events
-        if (gameState.inGame && gameState.selectedCountry) {
-            const growthPercent = ((growth / (gameState.gdp - growth)) * 100).toFixed(1);
-            const newsEvent = `📊 ${gameState.selectedCountry.name.common} GDP grows ${growthPercent}% - Annual income: ${formatMoney(gdpIncome)}`;
-            gameState.newsHeadlines.push(newsEvent);
-            if (gameState.newsHeadlines.length > 20) {
-                gameState.newsHeadlines.shift();
-            }
-        }
+                if (gameState.inGame && gameState.selectedCountry) {
+                    const growthPercent = ((growth / (gameState.gdp - growth)) * 100).toFixed(1);
+                    gameState.newsHeadlines.push(`📊 ${gameState.selectedCountry.name.common} GDP grows ${growthPercent}% — Annual income: ${formatMoney(gdpIncome)}`);
+                    if (gameState.newsHeadlines.length > 20) gameState.newsHeadlines.shift();
+                }
             }
         }
     } catch (error) {
-        console.error("ERROR in tick function:", error);
-        console.error("Stack trace:", error.stack);
-        console.log("Game state at error:", {
-            inGame: gameState.inGame,
-            isPaused: gameState.isPaused,
-            gameDate: gameState.gameDate,
-            lastYear: lastYear,
-            dayAccumulator: dayAccumulator,
-            selectedCountry: gameState.selectedCountry?.name.common
-        });
-        // Don't stop the game loop, but pause to prevent cascading errors
+        console.error("ERROR in tick:", error);
         gameState.isPaused = true;
-        alert("An error occurred in the game. The game has been paused. Check the console (F12) for details.");
+        alert("A game error occurred and the game has been paused. Check the console (F12) for details.");
     }
 }
 
+function gameLoop() { tick(); requestAnimationFrame(gameLoop); }
+
+// Watchdog – auto-fix stuck time
+let lastDateCheck = new Date();
+let lastDateValue = null;
+setInterval(() => {
+    if (gameState.inGame && !gameState.isPaused) {
+        const cur = gameState.gameDate.toISOString();
+        if (cur === lastDateValue) {
+            if (Date.now() - lastDateCheck.getTime() > 10000) {
+                console.error("TIME STUCK DETECTED – resetting time tracking");
+                lastTick = performance.now();
+                dayAccumulator = 0;
+            }
+        } else {
+            lastDateValue = cur;
+            lastDateCheck = new Date();
+        }
+    }
+}, 5000);
+
+gameLoop();
+
+// ============================================================
+// DOM READY
+// ============================================================
 document.addEventListener("DOMContentLoaded", () => {
     const saveWindow = document.getElementById("save-window");
-    console.log("DOMContentLoaded - saveWindow:", saveWindow);
-    console.log("DOMContentLoaded - saveData:", gameState.saveData);
-
     if (gameState.saveData && saveWindow) {
-
         saveWindow.style.display = "block";
-
-        document.getElementById("save-country").textContent =
-            gameState.saveData.countryName;
-
-        // Show the real-world date/time when the game was saved
+        document.getElementById("save-country").textContent = gameState.saveData.countryName;
         if (gameState.saveData.lastSaved) {
-            const realSaveTime = new Date(gameState.saveData.lastSaved);
-            
             document.getElementById("save-date").textContent =
-                realSaveTime.toLocaleString("en-US", {
-                    month: "short",
-                    day: "2-digit",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    second: "2-digit",
-                    hour12: true
+                new Date(gameState.saveData.lastSaved).toLocaleString("en-US", {
+                    month: "short", day: "2-digit", year: "numeric",
+                    hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true
                 });
         }
-
         const loadBtn = document.getElementById("load-save-btn");
-        console.log("Load button element:", loadBtn);
-        
         if (loadBtn) {
-            // Remove any existing listeners
             loadBtn.onclick = null;
-            
-            // Add new listener
-            loadBtn.addEventListener('click', function(e) {
-                console.log("Load button clicked!");
-                e.preventDefault();
-                e.stopPropagation();
+            loadBtn.addEventListener('click', e => {
+                e.preventDefault(); e.stopPropagation();
                 saveWindow.style.display = "none";
                 startSimulation(true);
             });
-            
-            console.log("Load button listener attached");
-        } else {
-            console.error("Load button not found!");
         }
     }
 });
 
+// ============================================================
+// ECONOMY STATE
+// ============================================================
 const economyState = {
     inflation: 2,
     unemployment: 3,
-
     resources: {
         "Natural Gas & Oil": ["Natural Gas", "Oil", "Coal"],
         "Minerals & Ores": [
             "Lithium", "Cobalt", "Nickel", "Graphite", "Rare-earth",
             "Iron", "Copper", "Aluminum", "Manganese", "Quartz",
             "Potash", "Phosphorus", "Sulfur", "Gold", "Silver",
-            "Platinum", "Silicon", "Tantalum", "Tellurium",
-            "Diamond", "Uranium"
+            "Platinum", "Silicon", "Tantalum", "Tellurium", "Diamond", "Uranium"
         ],
-        "Non-metal": [
-            "Sand", "Gravel", "Limestone", "Clay", "Gypsum",
-            "Marble", "Granite", "Salt", "Carbon"
-        ],
+        "Non-metal": ["Sand", "Gravel", "Limestone", "Clay", "Gypsum", "Marble", "Granite", "Salt", "Carbon"],
         "Agriculture": ["Water", "Vegetation", "Meat"],
         "Labor": ["Male (Adult)", "Female (Adult)", "Children"],
         "Supply": ["Electricity", "Water", "Waste"]
     },
-
     values: {}
 };
 
-// ============== NEWS TICKER SYSTEM ==============
+// ============================================================
+// ECONOMY FUNCTIONS
+// ============================================================
+function initEconomy() {
+    for (const category in economyState.resources) {
+        const items = economyState.resources[category];
+        economyState.values[category] = {};
+
+        if (category === "Supply") {
+            items.forEach(item => {
+                if (item === "Electricity" || item === "Water") {
+                    economyState.values[category][item] = { percent: 100, change: 0 };
+                } else {
+                    // Waste: random 1-100%
+                    economyState.values[category][item] = { percent: Math.floor(Math.random() * 100) + 1, change: 0 };
+                }
+            });
+            continue;
+        }
+
+        // Randomize and normalize to 100% for all other categories
+        const randomValues = items.map(() => Math.random() * 100);
+        const total = randomValues.reduce((a, b) => a + b, 0);
+        items.forEach((item, i) => {
+            economyState.values[category][item] = {
+                percent: Math.round((randomValues[i] / total) * 100),
+                change: 0
+            };
+        });
+
+        // Fix rounding to ensure exactly 100%
+        let currentTotal = items.reduce((s, item) => s + economyState.values[category][item].percent, 0);
+        if (currentTotal !== 100) economyState.values[category][items[0]].percent += (100 - currentTotal);
+    }
+}
+
+// Only called by trade actions – resources never drift on their own
+function updateEconomy() { renderEconomyUI(); }
+
+function applyResourceChange(category, item, delta) {
+    if (!economyState.values[category]?.[item]) return;
+    const data = economyState.values[category][item];
+    const oldPercent = data.percent;
+    data.percent = Math.max(0, Math.min(100, data.percent + delta));
+    data.change = data.percent - oldPercent;
+
+    if (category !== "Supply") {
+        const items = Object.keys(economyState.values[category]);
+        const others = items.filter(i => i !== item);
+        const otherTotal = others.reduce((s, i) => s + economyState.values[category][i].percent, 0);
+        const newOtherTotal = 100 - data.percent;
+        if (otherTotal > 0) {
+            others.forEach(i => {
+                const od = economyState.values[category][i];
+                const old = od.percent;
+                od.percent = Math.max(1, Math.round((od.percent / otherTotal) * newOtherTotal));
+                od.change = od.percent - old;
+            });
+            let t = data.percent + others.reduce((s, i) => s + economyState.values[category][i].percent, 0);
+            if (t !== 100) {
+                economyState.values[category][others[others.length - 1]].percent += (100 - t);
+            }
+        }
+    }
+    renderEconomyUI();
+}
+
+function renderEconomyUI() {
+    try {
+        const container = document.getElementById("scroll-engine");
+        if (!container) return;
+
+        container.querySelectorAll('.category-section, .cat-head').forEach(el => el.remove());
+
+        const resourcesHeader = document.createElement("h3");
+        resourcesHeader.className = "cat-head";
+        resourcesHeader.innerText = "RESOURCES:";
+        const closeBtn = container.querySelector('.big-neon-btn');
+        closeBtn ? container.insertBefore(resourcesHeader, closeBtn) : container.appendChild(resourcesHeader);
+
+        for (const category in economyState.values) {
+            const section = document.createElement("div");
+            section.className = "category-section";
+
+            const title = document.createElement("h3");
+            title.className = "cat-head";
+            title.innerText = category.toUpperCase();
+
+            const list = document.createElement("ul");
+            list.className = "res-list";
+
+            for (const item in economyState.values[category]) {
+                const data = economyState.values[category][item];
+                let color = "#aaa";
+                if (item === "Waste") {
+                    if (data.change > 0) color = "#ff4444";
+                    if (data.change < 0) color = "#00ff41";
+                } else {
+                    if (data.change > 0) color = "#00ff41";
+                    if (data.change < 0) color = "#ff4444";
+                }
+                const li = document.createElement("li");
+                li.innerHTML = `${item}: ${data.percent}% <span style="color:${color}">(${data.change > 0 ? "+" : ""}${data.change}%)</span>`;
+                list.appendChild(li);
+            }
+
+            section.appendChild(title);
+            section.appendChild(list);
+            closeBtn ? container.insertBefore(section, closeBtn) : container.appendChild(section);
+        }
+    } catch (error) {
+        console.error("Error in renderEconomyUI:", error);
+    }
+}
+
+// ============================================================
+// NEWS SYSTEM
+// ============================================================
 const newsTemplates = {
     economic: [
         "💹 {country} GDP grows {percent}% this quarter",
@@ -557,761 +566,231 @@ const newsTemplates = {
 
 function generateNews() {
     if (!gameState.selectedCountry || gameState.territories.length === 0) return "Loading global economic data...";
-    
-    // 60% chance for player's country, 40% chance for another country
-    const usePlayerCountry = Math.random() < 0.6;
-    
-    let country;
-    if (usePlayerCountry) {
-        country = gameState.selectedCountry.name.common;
-    } else {
-        // Pick a random other country (excluding Antarctica and player country)
-        const otherCountries = gameState.territories
-            .filter(t => 
-                t.name.common !== "Antarctica" && 
-                t.name.common !== gameState.selectedCountry.name.common &&
-                t.gdp && t.gdp > 100000 // Only show countries with reasonable GDP
-            );
-        
-        if (otherCountries.length > 0) {
-            // Favor top 50 countries for more relevant news
-            const topCountries = [...otherCountries]
-                .sort((a, b) => b.gdp - a.gdp)
-                .slice(0, 50);
-            
-            const selectedCountry = topCountries[Math.floor(Math.random() * topCountries.length)];
-            country = selectedCountry.name.common;
-        } else {
-            country = gameState.selectedCountry.name.common;
-        }
+
+    const usePlayer = Math.random() < 0.6;
+    let country = gameState.selectedCountry.name.common;
+
+    if (!usePlayer) {
+        const others = gameState.territories
+            .filter(t => t.name.common !== "Antarctica" && t.name.common !== country && t.gdp > 100000)
+            .sort((a, b) => b.gdp - a.gdp).slice(0, 50);
+        if (others.length > 0) country = others[Math.floor(Math.random() * others.length)].name.common;
     }
-    
+
     const categories = Object.keys(newsTemplates);
     const category = categories[Math.floor(Math.random() * categories.length)];
-    const templates = newsTemplates[category];
-    const template = templates[Math.floor(Math.random() * templates.length)];
-    
-    // Generate random values
-    const percent = (Math.random() * 5 + 0.5).toFixed(1);
-    const amount = (Math.random() * 500 + 50).toFixed(0);
-    const year = gameState.gameDate.getFullYear();
-    
-    const trends = ["strong", "positive", "stable", "robust", "promising"];
-    const directions = ["rises", "increases", "improves", "strengthens"];
-    const trend = trends[Math.floor(Math.random() * trends.length)];
+    const template = newsTemplates[category][Math.floor(Math.random() * newsTemplates[category].length)];
+
+    const percent   = (Math.random() * 5 + 0.5).toFixed(1);
+    const amount    = (Math.random() * 500 + 50).toFixed(0);
+    const year      = gameState.gameDate.getFullYear();
+    const trends    = ["strong", "positive", "stable", "robust", "promising"];
+    const directions= ["rises", "increases", "improves", "strengthens"];
+    const trend     = trends[Math.floor(Math.random() * trends.length)];
     const direction = directions[Math.floor(Math.random() * directions.length)];
-    
-    // Get random partner country (different from the main country)
-    const partners = gameState.territories
-        .filter(t => 
-            t.name.common !== country && 
-            t.name.common !== "Antarctica" &&
-            t.gdp && t.gdp > 100000
-        )
-        .sort((a, b) => b.gdp - a.gdp)
-        .slice(0, 30);
-    const partner = partners[Math.floor(Math.random() * partners.length)]?.name.common || "Global Partners";
-    
-    // Get random resource (exclude Labor category for trade news)
-    const resourceCategories = Object.keys(economyState.resources).filter(cat => cat !== "Labor");
-    const resourceCategory = resourceCategories[Math.floor(Math.random() * resourceCategories.length)];
-    const resources = economyState.resources[resourceCategory];
-    const resource = resources[Math.floor(Math.random() * resources.length)];
-    
-    // Replace placeholders
-    let news = template
-        .replace(/{country}/g, country)
-        .replace(/{percent}/g, percent)
-        .replace(/{amount}/g, amount)
-        .replace(/{trend}/g, trend)
-        .replace(/{direction}/g, direction)
-        .replace(/{partner}/g, partner)
-        .replace(/{resource}/g, resource)
-        .replace(/{year}/g, year);
-    
-    return news;
+
+    const partners  = gameState.territories
+        .filter(t => t.name.common !== country && t.name.common !== "Antarctica" && t.gdp > 100000)
+        .sort((a, b) => b.gdp - a.gdp).slice(0, 30);
+    const partner   = partners[Math.floor(Math.random() * partners.length)]?.name.common || "Global Partners";
+
+    // Exclude Labor category from resource news
+    const resCats   = Object.keys(economyState.resources).filter(c => c !== "Labor");
+    const resCat    = resCats[Math.floor(Math.random() * resCats.length)];
+    const resource  = economyState.resources[resCat][Math.floor(Math.random() * economyState.resources[resCat].length)];
+
+    return template
+        .replace(/{country}/g, country).replace(/{percent}/g, percent)
+        .replace(/{amount}/g, amount).replace(/{trend}/g, trend)
+        .replace(/{direction}/g, direction).replace(/{partner}/g, partner)
+        .replace(/{resource}/g, resource).replace(/{year}/g, year);
 }
 
 function initNewsSystem() {
-    // Use the existing news-window from HTML
-    const newsWindow = document.getElementById('news-window');
+    const newsWindow  = document.getElementById('news-window');
     const newsContent = document.getElementById('news-content');
-    
     if (newsWindow && newsContent) {
         newsWindow.style.display = 'block';
-        
-        // Set initial text
         newsContent.textContent = "Economic systems initializing...";
         newsContent.style.animation = 'scrollNews 15s linear infinite';
     }
-    
-    // Generate initial headlines
     gameState.newsHeadlines = [];
-    for (let i = 0; i < 10; i++) {
-        gameState.newsHeadlines.push(generateNews());
-    }
-    
-    // Start ticker animation after a short delay
-    setTimeout(() => {
-        updateNewsTicker();
-    }, 2000);
-}
-
-function addNewsTickerStyles() {
-    const style = document.createElement('style');
-    style.textContent = `
-        #news-ticker {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 40px;
-            background: linear-gradient(180deg, rgba(0, 255, 65, 0.15) 0%, rgba(0, 20, 5, 0.95) 100%);
-            border-bottom: 2px solid #00ff41;
-            box-shadow: 0 4px 20px rgba(0, 255, 65, 0.3);
-            z-index: 9999;
-            overflow: hidden;
-            font-family: 'Courier New', monospace;
-            backdrop-filter: blur(10px);
-        }
-        
-        .news-ticker-container {
-            display: flex;
-            align-items: center;
-            height: 100%;
-            gap: 15px;
-        }
-        
-        .news-label {
-            background: #00ff41;
-            color: #000;
-            padding: 0 15px;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            font-weight: bold;
-            font-size: 14px;
-            letter-spacing: 2px;
-            text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
-            flex-shrink: 0;
-            animation: pulse-label 2s ease-in-out infinite;
-        }
-        
-        @keyframes pulse-label {
-            0%, 100% { background: #00ff41; }
-            50% { background: #00dd35; }
-        }
-        
-        .news-content {
-            flex: 1;
-            overflow: hidden;
-            position: relative;
-            height: 100%;
-        }
-        
-        .news-text {
-            color: #00ff41;
-            font-size: 16px;
-            white-space: nowrap;
-            display: inline-block;
-            padding-left: 100%;
-            animation: scroll-news 30s linear infinite;
-            line-height: 40px;
-            text-shadow: 0 0 10px rgba(0, 255, 65, 0.8);
-            letter-spacing: 0.5px;
-        }
-        
-        @keyframes scroll-news {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-100%); }
-        }
-        
-        .news-text:hover {
-            animation-play-state: paused;
-            color: #00ffff;
-            text-shadow: 0 0 15px rgba(0, 255, 255, 0.9);
-        }
-        
-        /* Adjust game elements to account for news ticker */
-        #tactical-hud {
-            top: 50px !important;
-        }
-        
-        #temporal-engine {
-            top: 50px !important;
-        }
-    `;
-    document.head.appendChild(style);
+    for (let i = 0; i < 10; i++) gameState.newsHeadlines.push(generateNews());
+    setTimeout(updateNewsTicker, 2000);
 }
 
 function updateNewsTicker() {
     const newsContent = document.getElementById('news-content');
     if (!newsContent || !gameState.inGame) return;
-    
-    if (gameState.newsHeadlines.length === 0) return;
-    
-    // Get current headline
+    if (!gameState.newsHeadlines.length) return;
+
     const headline = gameState.newsHeadlines[gameState.newsIndex];
-    
-    // Add fade out animation
     newsContent.style.animation = 'fadeOut 0.5s ease-out';
-    
     setTimeout(() => {
         newsContent.textContent = headline;
-        // Add scroll animation
         newsContent.style.animation = 'scrollNews 20s linear infinite';
     }, 500);
-    
-    // Move to next headline
+
     gameState.newsIndex = (gameState.newsIndex + 1) % gameState.newsHeadlines.length;
-    
-    // Generate new headline occasionally
     if (Math.random() < 0.3) {
-        const newHeadline = generateNews();
-        gameState.newsHeadlines.push(newHeadline);
-        if (gameState.newsHeadlines.length > 20) {
-            gameState.newsHeadlines.shift();
-        }
+        gameState.newsHeadlines.push(generateNews());
+        if (gameState.newsHeadlines.length > 20) gameState.newsHeadlines.shift();
     }
 }
 
-// Update news every 30 seconds
-setInterval(() => {
-    if (gameState.inGame && !gameState.isPaused) {
-        updateNewsTicker();
-    }
-}, 30000);
-// ============== END NEWS TICKER SYSTEM ==============
+setInterval(() => { if (gameState.inGame && !gameState.isPaused) updateNewsTicker(); }, 30000);
 
-
-function initEconomy() {
-    for (const category in economyState.resources) {
-        const items = economyState.resources[category];
-        const count = items.length;
-
-        economyState.values[category] = {};
-
-        // Special handling for Supply category
-        if (category === "Supply") {
-            items.forEach((item) => {
-                if (item === "Electricity" || item === "Water") {
-                    // Electricity and Water start at 100%
-                    economyState.values[category][item] = {
-                        percent: 100,
-                        change: 0  // Start at 0, not random
-                    };
-                } else if (item === "Waste") {
-                    // Waste is randomized between 1-100%
-                    economyState.values[category][item] = {
-                        percent: Math.floor(Math.random() * 100) + 1,
-                        change: 0  // Start at 0, not random
-                    };
-                }
-            });
-            continue; // Skip normal processing for Supply
-        }
-
-        // Normal processing for other categories
-        // Generate random percentages that add up to 100%
-        const randomValues = [];
-        let total = 0;
-        
-        // Generate random numbers for each item
-        for (let i = 0; i < count; i++) {
-            const randomVal = Math.random() * 100;
-            randomValues.push(randomVal);
-            total += randomVal;
-        }
-        
-        // Normalize to make them add up to 100%
-        items.forEach((item, index) => {
-            const normalizedPercent = Math.round((randomValues[index] / total) * 100);
-            
-            economyState.values[category][item] = {
-                percent: normalizedPercent,
-                change: 0  // Start at 0, not random
-            };
-        });
-        
-        // Ensure total is exactly 100% by adjusting the first item if needed
-        let currentTotal = 0;
-        items.forEach(item => {
-            currentTotal += economyState.values[category][item].percent;
-        });
-        
-        if (currentTotal !== 100) {
-            const firstItem = items[0];
-            economyState.values[category][firstItem].percent += (100 - currentTotal);
-        }
-    }
-}
-
-function randomDelta() {
-    const r = Math.floor(Math.random() * 3) - 1;
-    return r;
-}
-
-function randomChange(category) {
-    let change = Math.floor(Math.random() * 11) - 5;
-
-    if (category === "Supply") {
-        return change;
-    }
-
-    return change;
-}
-
-function generateCategoryValues(items) {
-    let remaining = 100;
-    const result = {};
-
-    items.forEach((item, i) => {
-        if (i === items.length - 1) {
-            result[item] = remaining;
-        } else {
-            const val = Math.floor(Math.random() * (remaining + 1));
-            result[item] = val;
-            remaining -= val;
-        }
-    });
-
-    return result;
-}
-
-function updateEconomy() {
-    for (const category in economyState.values) {
-        // Special handling for Supply - no normalization needed
-        if (category === "Supply") {
-            // Update each item independently (no total = 100% constraint)
-            for (const item in economyState.values[category]) {
-                const data = economyState.values[category][item];
-                const delta = randomDelta();
-
-                data.change = delta;
-                data.percent += delta;
-
-                // Keep within bounds
-                if (data.percent < 0) data.percent = 0;
-                if (data.percent > 100) data.percent = 100;
-            }
-            continue; // Skip normalization for Supply
-        }
-
-        // Normal processing for other categories
-        // Update each item's percentage
-        for (const item in economyState.values[category]) {
-            const data = economyState.values[category][item];
-            const delta = randomDelta();
-
-            data.change = delta;
-            data.percent += delta;
-
-            // Prevent negative values
-            if (data.percent < 1) data.percent = 1;
-        }
-
-        // Normalize to make total equal 100%
-        let total = 0;
-        for (const item in economyState.values[category]) {
-            total += economyState.values[category][item].percent;
-        }
-
-        // Scale all percentages to sum to 100
-        let normalizedTotal = 0;
-        const items = Object.keys(economyState.values[category]);
-        
-        items.forEach((item, index) => {
-            if (index < items.length - 1) {
-                economyState.values[category][item].percent =
-                    Math.round((economyState.values[category][item].percent / total) * 100);
-                normalizedTotal += economyState.values[category][item].percent;
-            }
-        });
-        
-        // Last item gets remainder to ensure exactly 100%
-        const lastItem = items[items.length - 1];
-        economyState.values[category][lastItem].percent = 100 - normalizedTotal;
-    }
-
-    renderEconomyUI();
-}
-
-function renderEconomyUI() {
-    try {
-        const container = document.getElementById("scroll-engine");
-        if (!container) {
-            console.error("scroll-engine container not found");
-            return;
-        }
-
-        // Clear only the resources content, not the entire container
-        // First, remove all existing category sections
-        const oldSections = container.querySelectorAll('.category-section');
-        oldSections.forEach(section => section.remove());
-        
-        // Remove the RESOURCES header if it exists
-        const oldHeaders = container.querySelectorAll('.cat-head');
-        oldHeaders.forEach(header => header.remove());
-
-        // Create the RESOURCES header
-        const resourcesHeader = document.createElement("h3");
-        resourcesHeader.className = "cat-head";
-        resourcesHeader.innerText = "RESOURCES:";
-        
-        // Insert at the beginning
-        const closeBtn = container.querySelector('.big-neon-btn');
-        if (closeBtn) {
-            container.insertBefore(resourcesHeader, closeBtn);
-        } else {
-            container.appendChild(resourcesHeader);
-        }
-
-        for (const category in economyState.values) {
-            const section = document.createElement("div");
-            section.className = "category-section";
-
-            const title = document.createElement("h3");
-            title.className = "cat-head";
-            title.innerText = category.toUpperCase();
-
-            const list = document.createElement("ul");
-            list.className = "res-list";
-
-            for (const item in economyState.values[category]) {
-                const data = economyState.values[category][item];
-
-                let color = "#aaa";
-                
-                // Special case: Waste has inverted colors (red = bad/increase, green = good/decrease)
-                if (item === "Waste") {
-                    if (data.change > 0) color = "#ff4444"; // Red when waste increases (bad)
-                    if (data.change < 0) color = "#00ff41"; // Green when waste decreases (good)
-                } else {
-                    // Normal resources: green = good/increase, red = bad/decrease
-                    if (data.change > 0) color = "#00ff41";
-                    if (data.change < 0) color = "#ff4444";
-                }
-
-                const li = document.createElement("li");
-                li.innerHTML = `
-                    ${item}: ${data.percent}% 
-                    <span style="color:${color}">
-                        (${data.change > 0 ? "+" : ""}${data.change}%)
-                    </span>
-                `;
-                list.appendChild(li);
-            }
-
-            section.appendChild(title);
-            section.appendChild(list);
-            
-            // Insert before the close button (which should be last)
-            if (closeBtn) {
-                container.insertBefore(section, closeBtn);
-            } else {
-                container.appendChild(section);
-            }
-        }
-        
-        console.log("Economy UI rendered successfully");
-    } catch (error) {
-        console.error("Error in renderEconomyUI:", error);
-    }
-}
-
-function formatMoney(value) {
-
-    if (value >= 1_000_000) {
-        return `$${(value / 1_000_000).toFixed(2)} Trillion`;
-    }
-    if (value >= 1_000) {
-        return `$${(value / 1_000).toFixed(2)} Billion`;
-    }
-    if (value >= 1) {
-        return `$${value.toFixed(2)} Million`;
-    }
-
-    return `$${value.toFixed(2)} Million`;
-}
-
-const sortedList = Object.keys(realWorldData).sort((a,b) => realWorldData[b] - realWorldData[a]);
-
+// ============================================================
+// SIMULATION START
+// ============================================================
+const sortedList = Object.keys(realWorldData).sort((a, b) => realWorldData[b] - realWorldData[a]);
 let g, projection, path, svg, zoom;
 
-function beginGame() {
-    gameState.inGame = true;
-    gameState.isPaused = false;
-
-    lastTick = performance.now();
-    dayAccumulator = 0;
-    lastYear = gameState.gameDate.getFullYear();
-
-    renderClock();
-    renderTreasury();
-}
-
 async function startSimulation(isLoad) {
-    console.log("startSimulation called with isLoad:", isLoad);
-    console.log("saveData:", gameState.saveData);
-    
+    console.log("startSimulation:", isLoad);
     gameState.inGame = false;
-    const overlay = document.getElementById('loading-overlay');
-    const barFill = document.getElementById('loading-bar-fill');
-    
+
+    const overlay  = document.getElementById('loading-overlay');
+    const barFill  = document.getElementById('loading-bar-fill');
     const menuScreen = document.getElementById('menu-screen');
     if (menuScreen) menuScreen.style.display = 'none';
-    
     document.getElementById('viewport').style.display = 'block';
-    
-    if (overlay) overlay.style.display = 'flex';
-    if (barFill) barFill.style.width = "10%";
+    if (overlay)  overlay.style.display = 'flex';
+    if (barFill)  barFill.style.width = "10%";
 
     if (!svg) {
-        console.log("Initializing map...");
-        svg = d3.select("#viewport").append("svg").attr("width", window.innerWidth).attr("height", window.innerHeight);
+        svg = d3.select("#viewport").append("svg")
+            .attr("width", window.innerWidth).attr("height", window.innerHeight);
         g = svg.append("g");
-        zoom = d3.zoom().scaleExtent([1, 15]).on("zoom", (e) => g.attr("transform", e.transform));
+        zoom = d3.zoom().scaleExtent([1, 15]).on("zoom", e => g.attr("transform", e.transform));
         svg.call(zoom);
-        projection = d3.geoMercator().scale(window.innerWidth / 6.5).translate([window.innerWidth / 2,window.innerHeight * 0.5
-    ]);
+        projection = d3.geoMercator()
+            .scale(window.innerWidth / 6.5)
+            .translate([window.innerWidth / 2, window.innerHeight * 0.5]);
         path = d3.geoPath().projection(projection);
 
         if (barFill) barFill.style.width = "40%";
-        
-        console.log("Loading world data...");
+
         const world = await d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson");
-        const resp = await fetch('https://restcountries.com/v3.1/all?fields=name,latlng,cca2,population');
-
+        const resp  = await fetch('https://restcountries.com/v3.1/all?fields=name,latlng,cca2,population');
         gameState.territories = await resp.json();
-        console.log("Territories loaded:", gameState.territories.length);
 
-        if (!isLoad) {
-            console.log("Assigning real GDP for new game");
-            assignRealGDP();
-        } else if (gameState.saveData?.territoriesGDP) {
-            console.log("Restoring GDP from save");
-            restoreTerritoriesGDP(gameState.saveData.territoriesGDP);
-        } else {
-            console.log("No save GDP data, using real GDP");
-            assignRealGDP();
-        }
+        if (!isLoad)                              assignRealGDP();
+        else if (gameState.saveData?.territoriesGDP) restoreTerritoriesGDP(gameState.saveData.territoriesGDP);
+        else                                      assignRealGDP();
 
         buildGdpRanking();
-
         if (barFill) barFill.style.width = "70%";
-        
-        // Draw land paths first (lower layer)
-        g.selectAll("path").data(world.features).enter().append("path").attr("d", path)
+
+        // Land paths
+        g.selectAll("path").data(world.features).enter().append("path")
+            .attr("d", path)
             .attr("class", d => d.properties.name === "Antarctica" ? "land antarctica" : "land")
             .on("click", (e, d) => {
-                // Block Antarctica completely
-                if(d.properties.name === "Antarctica") {
-                    e.stopPropagation();
-                    return;
-                }
-                
-                // Try to find matching country
-                const mapName = d.properties.name;
-                const nameMap = {
-                    "USA": "United States",
-                    "United States of America": "United States",
-                    "Russia": "Russia",
-                    "Tanzania": "Tanzania"
-                };
-                
-                const searchName = nameMap[mapName] || mapName;
-                const c = gameState.territories.find(t => 
-                    t.name.common === searchName || 
-                    t.name.official === searchName
-                );
-                
-                if(c) {
-                    console.log("Selected from map:", c.name.common);
-                    
-                    if (gameState.inGame) {
-                        // In-game: show country info window
-                        showCountryInfo(c);
-                    } else {
-                        // Pre-game: select country to play as
-                        selectLocation(c);
-                    }
+                if (d.properties.name === "Antarctica") { e.stopPropagation(); return; }
+                const nameMap = { "USA": "United States", "United States of America": "United States" };
+                const searchName = nameMap[d.properties.name] || d.properties.name;
+                const c = gameState.territories.find(t => t.name.common === searchName || t.name.official === searchName);
+                if (c) {
+                    if (gameState.inGame) showCountryInfo(c);
+                    else selectLocation(c);
                 }
             });
 
-        // Draw territory pins on top (higher layer) with better visibility
+        // Territory pins
         g.selectAll("circle")
-            .data(gameState.territories.filter(d => {
-                // Filter out territories without valid coordinates
-                if (!d.latlng || d.latlng.length !== 2) return false;
-                // Filter out Antarctica explicitly
-                if (d.name.common === "Antarctica") return false;
-                return true;
-            }))
-            .enter()
-            .append("circle")
+            .data(gameState.territories.filter(d => d.latlng?.length === 2 && d.name.common !== "Antarctica"))
+            .enter().append("circle")
             .attr("cx", d => projection([d.latlng[1], d.latlng[0]])[0])
             .attr("cy", d => projection([d.latlng[1], d.latlng[0]])[1])
-            .attr("r", 3)
-            .attr("class", "territory-pin")
-            .on("click", (e, d) => { 
-                e.stopPropagation(); 
-                e.preventDefault();
-                
-                // Double check not Antarctica
-                if (d.name.common === "Antarctica") {
-                    console.log("Blocked Antarctica click");
-                    return;
-                }
-                
-                console.log("Selected from pin:", d.name.common);
-                
-                if (gameState.inGame) {
-                    // In-game: show country info window
-                    showCountryInfo(d);
-                } else {
-                    // Pre-game: select country to play as
-                    selectLocation(d);
-                }
+            .attr("r", 3).attr("class", "territory-pin")
+            .on("click", (e, d) => {
+                e.stopPropagation(); e.preventDefault();
+                if (d.name.common === "Antarctica") return;
+                if (gameState.inGame) showCountryInfo(d);
+                else selectLocation(d);
             });
     }
 
-setTimeout(() => {
-    if (barFill) barFill.style.width = "100%";
-    if (overlay) overlay.style.display = 'none';
-    document.getElementById('viewport').style.display = 'block';
+    setTimeout(() => {
+        if (barFill) barFill.style.width = "100%";
+        if (overlay) overlay.style.display = 'none';
+        document.getElementById('viewport').style.display = 'block';
+        lastTick = performance.now();
+        dayAccumulator = 0;
 
-    lastTick = performance.now();
-    dayAccumulator = 0;
+        if (isLoad && gameState.saveData) {
+            gameState.gameDate = new Date(gameState.saveData.date);
+            lastYear = gameState.gameDate.getFullYear();
+            initEconomy();
+            renderEconomyUI();
 
-    if (isLoad && gameState.saveData) {
-        console.log("Loading saved game for:", gameState.saveData.countryName);
-        
-        gameState.gameDate = new Date(gameState.saveData.date);
-        lastYear = gameState.gameDate.getFullYear();
-        
-        initEconomy();
-        renderEconomyUI();
-        
-        gameState.selectedCountry = gameState.territories.find(
-            c => c.name.common === gameState.saveData.countryName
-        );
+            gameState.selectedCountry = gameState.territories.find(c => c.name.common === gameState.saveData.countryName);
+            if (!gameState.selectedCountry) {
+                alert("Could not find saved country. Starting new game.");
+                randomizeJump();
+                document.getElementById('tactical-hud').style.display = 'block';
+                document.getElementById('main-action-btn').innerText = "ENTER STATE";
+                document.getElementById('main-action-btn').style.display = 'block';
+                return;
+            }
 
-        if (!gameState.selectedCountry) {
-            console.warn("Saved country not found in territories");
-            alert("Could not find saved country. Starting new game.");
+            gameState.gdp      = gameState.saveData.gdp;
+            gameState.treasury = gameState.saveData.treasury;
+            gameState.selectedCountry.gdp = gameState.gdp;
+            gameState.happiness = gameState.saveData.happiness ?? 100;
+            gameState.warWith   = gameState.saveData.warWith   ?? [];
+            gameState.resourceCapacity = gameState.saveData.resourceCapacity ?? {};
+            gameState.resourceStock    = gameState.saveData.resourceStock    ?? {};
+            initResourceStorage(); // fills in any missing entries
+
+            buildGdpRanking();
+            const rank = getCountryRank(gameState.selectedCountry.name.common);
+            document.getElementById('country-name-small').innerText = gameState.selectedCountry.name.common.toUpperCase();
+            document.getElementById('country-flag').src = `https://flagcdn.com/w160/${gameState.selectedCountry.cca2.toLowerCase()}.png`;
+            document.getElementById('rank-display').innerText = `🏆 GDP RANK: #${rank}`;
+            document.getElementById('pop-display').innerText  = `👥 Pop: ${gameState.selectedCountry.population.toLocaleString()}`;
+            renderTreasury();
+            renderHappiness();
+
+            document.getElementById('tactical-hud').style.display = 'block';
+            document.getElementById('temporal-engine').style.display = 'block';
+            document.getElementById('left-wing-stack')?.classList.add('in-game');
+            renderClock();
+            initNewsSystem();
+
+            const manageBtn = document.getElementById('main-action-btn');
+            manageBtn.innerText = "MANAGE STATE";
+            manageBtn.style.display = 'block';
+            manageBtn.onclick = openManagement;
+
+            document.getElementById('hud-actions').innerHTML =
+                `<button class="big-neon-btn" style="border-color:#00ffff;color:#00ffff;" onclick="saveAndExit()">💾 SAVE & EXIT</button>`;
+
+            gameState.inGame   = true;
+            gameState.isPaused = false;
+            lastTick = performance.now();
+            dayAccumulator = 0;
+
+        } else {
+            gameState.gameDate = new Date(2026, 0, 1);
+            lastYear = gameState.gameDate.getFullYear();
+            initEconomy();
+            renderEconomyUI();
             randomizeJump();
             document.getElementById('tactical-hud').style.display = 'block';
             const manageBtn = document.getElementById('main-action-btn');
             manageBtn.innerText = "ENTER STATE";
             manageBtn.style.display = 'block';
-            return;
         }
-
-        console.log("Found saved country:", gameState.selectedCountry.name.common);
-        
-        gameState.gdp = gameState.saveData.gdp;
-        gameState.treasury = gameState.saveData.treasury;
-        gameState.selectedCountry.gdp = gameState.gdp;
-        
-        // Build GDP ranking first
-        buildGdpRanking();
-        const rank = getCountryRank(gameState.selectedCountry.name.common);
-        
-        // Update HUD without changing treasury
-        document.getElementById('country-name-small').innerText =
-            gameState.selectedCountry.name.common.toUpperCase();
-
-        document.getElementById('country-flag').src =
-            `https://flagcdn.com/w160/${gameState.selectedCountry.cca2.toLowerCase()}.png`;
-
-        document.getElementById('rank-display').innerText =
-            `🏆 GDP RANK: #${rank}`;
-
-        document.getElementById('pop-display').innerText =
-            `👥 Pop: ${gameState.selectedCountry.population.toLocaleString()}`;
-        
-        renderTreasury();
-
-        document.getElementById('tactical-hud').style.display = 'block';
-        document.getElementById('temporal-engine').style.display = 'block';
-        
-        // Move country panel down when in game
-        const leftWingStack = document.getElementById('left-wing-stack');
-        if (leftWingStack) {
-            leftWingStack.classList.add('in-game');
-        }
-        
-        renderClock();
-        
-        // Initialize happiness from save or default to 100
-        if (typeof gameState.saveData.happiness !== 'undefined') {
-            gameState.happiness = gameState.saveData.happiness;
-        } else {
-            gameState.happiness = 100;
-        }
-        
-        // Initialize war state from save or default to empty
-        if (gameState.saveData.warWith) {
-            gameState.warWith = gameState.saveData.warWith;
-        } else {
-            gameState.warWith = [];
-        }
-        
-        renderHappiness();
-        
-        // Set game as active AFTER everything is set up
-        gameState.inGame = true;
-        gameState.isPaused = false;
-        
-        // CRITICAL: Reset time tracking AFTER setting inGame
-        lastTick = performance.now();
-        dayAccumulator = 0;
-        
-        console.log("Load save - Time reset:", {
-            gameDate: gameState.gameDate,
-            lastYear: lastYear,
-            inGame: gameState.inGame,
-            isPaused: gameState.isPaused,
-            lastTick: lastTick,
-            dayAccumulator: dayAccumulator
-        });
-        
-        // Initialize news ticker
-        initNewsSystem();
-
-        const manageBtn = document.getElementById('main-action-btn');
-        manageBtn.innerText = "MANAGE STATE";
-        manageBtn.style.display = 'block';
-        manageBtn.onclick = openManagement;
-
-        document.getElementById('hud-actions').innerHTML = `
-            <button class="big-neon-btn" style="border-color:#00ffff; color:#00ffff;" onclick="saveAndExit()">💾 SAVE & EXIT</button>
-        `;
-        
-        console.log("Save loaded successfully!");
-
-    } else {
-        console.log("Starting new game");
-        gameState.gameDate = new Date(2026, 0, 1);
-        lastYear = gameState.gameDate.getFullYear();
-        
-        initEconomy();
-        renderEconomyUI();
-        randomizeJump();
-        document.getElementById('tactical-hud').style.display = 'block';
-
-        const manageBtn = document.getElementById('main-action-btn');
-        manageBtn.innerText = "ENTER STATE";
-        manageBtn.style.display = 'block';
-    }
     }, 600);
 }
 
+// ============================================================
+// HANDLE ACTION (ENTER STATE / MANAGE STATE)
+// ============================================================
 window.handleAction = () => {
-    if (!gameState.selectedCountry) {
-        alert("No country selected!");
-        return;
-    }
+    if (!gameState.selectedCountry) { alert("No country selected!"); return; }
 
     if (!gameState.inGame) {
         document.getElementById('tactical-hud').style.display = 'none';
@@ -1319,172 +798,106 @@ window.handleAction = () => {
         document.getElementById('loading-overlay').style.display = 'flex';
         document.getElementById('loading-text').innerText = "SYNCHRONIZING ECONOMY...";
 
-setTimeout(() => {
-    gameState.gdp = gameState.selectedCountry.gdp;
-    
-    // Calculate starting treasury based on rank and GDP
-    const rank = getCountryRank(gameState.selectedCountry.name.common);
-    const numericRank = typeof rank === 'number' ? rank : 100;
-    gameState.treasury = calculateStartingTreasury(gameState.gdp, numericRank);
-    
-    renderTreasury();
+        setTimeout(() => {
+            gameState.gdp = gameState.selectedCountry.gdp;
+            const rank = getCountryRank(gameState.selectedCountry.name.common);
+            gameState.treasury = calculateStartingTreasury(gameState.gdp, typeof rank === 'number' ? rank : 100);
+            renderTreasury();
 
-    document.getElementById('loading-overlay').style.display = 'none';
-    document.getElementById('tactical-hud').style.display = 'block';
-    document.getElementById('temporal-engine').style.display = 'block';
-    
-    // Move country panel down when in game
-    const leftWingStack = document.getElementById('left-wing-stack');
-    if (leftWingStack) {
-        leftWingStack.classList.add('in-game');
-    }
-    
-    renderClock();
-    
-    // Initialize news ticker
-    initNewsSystem();
+            document.getElementById('loading-overlay').style.display = 'none';
+            document.getElementById('tactical-hud').style.display = 'block';
+            document.getElementById('temporal-engine').style.display = 'block';
+            document.getElementById('left-wing-stack')?.classList.add('in-game');
+            renderClock();
+            initNewsSystem();
 
-    document.getElementById('hud-actions').innerHTML = `
-        <button class="big-neon-btn" style="border-color:#00ffff; color:#00ffff;" onclick="saveAndExit()">💾 SAVE & EXIT</button>
-    `;
+            document.getElementById('hud-actions').innerHTML =
+                `<button class="big-neon-btn" style="border-color:#00ffff;color:#00ffff;" onclick="saveAndExit()">💾 SAVE & EXIT</button>`;
 
-    const manageBtn = document.getElementById('main-action-btn');
-    manageBtn.innerText = "MANAGE STATE";
-    manageBtn.style.display = 'block';
-    manageBtn.onclick = openManagement;
-    
-    // Initialize happiness
-    gameState.happiness = 100;
-    gameState.warWith = [];
-    renderHappiness();
-    
-    // CRITICAL: Set game active and reset time tracking at the VERY END
-    gameState.inGame = true;
-    gameState.isPaused = false;
-    lastTick = performance.now();
-    dayAccumulator = 0;
-    
-    console.log("New game started - Time initialized:", {
-        inGame: gameState.inGame,
-        isPaused: gameState.isPaused,
-        lastTick: lastTick,
-        dayAccumulator: dayAccumulator
-    });
+            const manageBtn = document.getElementById('main-action-btn');
+            manageBtn.innerText = "MANAGE STATE";
+            manageBtn.style.display = 'block';
+            manageBtn.onclick = openManagement;
 
-}, 1200);
+            gameState.happiness = 100;
+            gameState.warWith   = [];
+            gameState.resourceCapacity = {};
+            gameState.resourceStock    = {};
+            initResourceStorage();
+            renderHappiness();
+
+            gameState.inGame   = true;
+            gameState.isPaused = false;
+            lastTick = performance.now();
+            dayAccumulator = 0;
+        }, 1200);
     } else {
         openManagement();
     }
 };
 
+// ============================================================
+// SAVE & EXIT
+// ============================================================
 window.saveAndExit = () => {
-    const territoriesGDP = gameState.territories.map(t => ({
-        name: t.name.common,
-        gdp: t.gdp
-    }));
-
     const data = {
-        countryName: gameState.selectedCountry.name.common,
-        date: gameState.gameDate.toISOString(),
-        lastSaved: new Date().toISOString(),
-        treasury: gameState.treasury,
-        gdp: gameState.gdp,
-        territoriesGDP: territoriesGDP,
-        happiness: gameState.happiness,
-        warWith: gameState.warWith || []
+        countryName:       gameState.selectedCountry.name.common,
+        date:              gameState.gameDate.toISOString(),
+        lastSaved:         new Date().toISOString(),
+        treasury:          gameState.treasury,
+        gdp:               gameState.gdp,
+        territoriesGDP:    gameState.territories.map(t => ({ name: t.name.common, gdp: t.gdp })),
+        happiness:         gameState.happiness,
+        warWith:           gameState.warWith || [],
+        resourceCapacity:  gameState.resourceCapacity,
+        resourceStock:     gameState.resourceStock
     };
-
     localStorage.setItem('monetary_state_save', JSON.stringify(data));
     location.reload();
 };
 
 window.randomizeJump = () => {
     const valid = gameState.territories.filter(t => t.name.common !== "Antarctica");
-    const r = valid[Math.floor(Math.random()*valid.length)];
-    if(r) selectLocation(r);
+    const r = valid[Math.floor(Math.random() * valid.length)];
+    if (r) selectLocation(r);
 };
 
+// ============================================================
+// MANAGEMENT WINDOW
+// ============================================================
 window.openManagement = () => {
     if (!gameState.inGame || !gameState.selectedCountry) return;
-    
-    console.log("Opening management - game continues running");
-    
-    const managementWin = document.getElementById('management-window');
-    const actionWin = document.getElementById('action-window');
-    const manageBtn = document.getElementById('main-action-btn');
-    
-    document.getElementById('manage-country').innerText =
-        gameState.selectedCountry.name.common.toUpperCase();
-
+    document.getElementById('manage-country').innerText = gameState.selectedCountry.name.common.toUpperCase();
     renderEconomyUI();
-    managementWin.style.display = "flex";
-    
-    // Show action window
-    if (actionWin) {
-        actionWin.style.display = "flex";
-        actionWin.classList.add('in-game');
-        console.log("Action window shown");
-    } else {
-        console.error("Action window not found!");
-    }
-    
-    // Hide manage button
-    if (manageBtn) {
-        manageBtn.style.display = "none";
-    }
-};
-
-window.closeActionWindow = () => {
-    console.log("Closing action window");
-    
-    const actionWin = document.getElementById("action-window");
+    document.getElementById('management-window').style.display = "flex";
+    const actionWin = document.getElementById('action-window');
+    if (actionWin) actionWin.style.display = "flex";
     const manageBtn = document.getElementById('main-action-btn');
-    
-    // Hide action window
-    if (actionWin) {
-        actionWin.style.display = "none";
-    }
-    
-    // Show manage button again
-    if (manageBtn) {
-        manageBtn.style.display = "block";
-        manageBtn.innerText = "MANAGE STATE";
-    }
-    
-    console.log("Action window closed, manage button restored");
+    if (manageBtn) manageBtn.style.display = "none";
 };
 
 window.closeManage = () => {
-    console.log("Closing management - game was never paused");
-    
-    const managementWin = document.getElementById("management-window");
+    document.getElementById("management-window").style.display = "none";
     const actionWin = document.getElementById("action-window");
+    if (actionWin) actionWin.style.display = "none";
     const manageBtn = document.getElementById('main-action-btn');
-    
-    managementWin.style.display = "none";
-    
-    // Hide action window
-    if (actionWin) {
-        actionWin.style.display = "none";
-    }
-    
-    // Show manage button again
-    if (manageBtn) {
-        manageBtn.style.display = "block";
-        manageBtn.innerText = "MANAGE STATE";
-    }
-    
-    console.log("Management window closed");
+    if (manageBtn) { manageBtn.style.display = "block"; manageBtn.innerText = "MANAGE STATE"; }
 };
 
-// Initialize diplomatic relations for a country
+window.closeActionWindow = () => {
+    const actionWin = document.getElementById("action-window");
+    if (actionWin) actionWin.style.display = "none";
+    const manageBtn = document.getElementById('main-action-btn');
+    if (manageBtn) { manageBtn.style.display = "block"; manageBtn.innerText = "MANAGE STATE"; }
+};
+
+// ============================================================
+// DIPLOMACY
+// ============================================================
 function initDiplomaticRelations(countryName) {
     if (!gameState.diplomaticRelations[countryName]) {
-        // Random initial relationship between -20 to +20 (mostly neutral)
-        const baseRelation = Math.floor(Math.random() * 41) - 20;
-        
         gameState.diplomaticRelations[countryName] = {
-            relationScore: baseRelation,
+            relationScore: Math.floor(Math.random() * 41) - 20,
             tradeEstablished: false,
             tradeVolume: 0
         };
@@ -1492,492 +905,654 @@ function initDiplomaticRelations(countryName) {
     return gameState.diplomaticRelations[countryName];
 }
 
-// Get relationship status text based on new scale
 function getRelationshipStatus(score) {
     if (score === -100) return "⚔️ WAR";
-    if (score >= 50) return "🤝 ALLY";
-    if (score >= 25) return "💚 CLOSE FRIEND";
-    if (score >= 10) return "😊 FRIEND";
-    if (score > 0) return "😐 NEUTRAL";
-    if (score === 0) return "😐 NEUTRAL";
-    if (score >= -10) return "😐 NEUTRAL";
-    if (score >= -25) return "🤨 UNCOOPERATIVE";
-    if (score >= -50) return "😠 TENSE";
-    if (score >= -99) return "💢 ENEMY";
+    if (score >= 50)    return "🤝 ALLY";
+    if (score >= 25)    return "💚 CLOSE FRIEND";
+    if (score >= 10)    return "😊 FRIEND";
+    if (score >= -10)   return "😐 NEUTRAL";
+    if (score >= -25)   return "🤨 UNCOOPERATIVE";
+    if (score >= -50)   return "😠 TENSE";
+    if (score >= -99)   return "💢 ENEMY";
     return "⚔️ WAR";
 }
 
-// Get relationship color
 function getRelationshipColor(score) {
     if (score === -100) return "#ff0000";
-    if (score >= 50) return "#00ff41";
-    if (score >= 25) return "#00dd33";
-    if (score >= 10) return "#88ff88";
-    if (score >= 0) return "#aaaaaa";
-    if (score >= -10) return "#aaaaaa";
-    if (score >= -25) return "#ffaa00";
-    if (score >= -50) return "#ff6600";
-    if (score >= -99) return "#ff3333";
+    if (score >= 50)    return "#00ff41";
+    if (score >= 25)    return "#00dd33";
+    if (score >= 10)    return "#88ff88";
+    if (score >= -10)   return "#aaaaaa";
+    if (score >= -25)   return "#ffaa00";
+    if (score >= -50)   return "#ff6600";
+    if (score >= -99)   return "#ff3333";
     return "#ff0000";
 }
 
-// Show country info window
 window.showCountryInfo = (country) => {
     if (!gameState.inGame || !gameState.selectedCountry) return;
-    if (country.name.common === gameState.selectedCountry.name.common) {
-        // Clicked own country - open management instead
-        openManagement();
-        return;
-    }
-    
-    console.log("Opening country info - game continues running");
-    
-    // DON'T pause game - let it continue running
-    // gameState.isPaused = true; // REMOVED
-    
-    // Hide tactical HUD and show country info panel
+    if (country.name.common === gameState.selectedCountry.name.common) { openManagement(); return; }
+
     document.getElementById('tactical-hud').style.display = 'none';
     document.getElementById('country-info-panel').style.display = 'block';
-    
-    // Initialize relations if needed
+
     const relations = initDiplomaticRelations(country.name.common);
-    
-    // Build GDP ranking to get rank
     buildGdpRanking();
     const rank = getCountryRank(country.name.common);
-    
-    // Update window content
+
     document.getElementById('info-country-name').innerText = country.name.common.toUpperCase();
     document.getElementById('info-country-flag').src = `https://flagcdn.com/w160/${country.cca2.toLowerCase()}.png`;
     document.getElementById('info-rank').innerText = `#${rank}`;
     document.getElementById('info-gdp').innerText = formatMoney(country.gdp || 0);
     document.getElementById('info-population').innerText = country.population.toLocaleString();
-    
-    // Update diplomatic info
-    const statusText = getRelationshipStatus(relations.relationScore);
+
+    const statusText  = getRelationshipStatus(relations.relationScore);
     const statusColor = getRelationshipColor(relations.relationScore);
-    
-    document.getElementById('relation-status').innerHTML = 
-        `<span style="color: ${statusColor}; font-weight: bold;">${statusText} (${relations.relationScore})</span>`;
-    
-    if (relations.tradeEstablished) {
-        document.getElementById('trade-volume').innerText = formatMoney(relations.tradeVolume);
-    } else {
-        document.getElementById('trade-volume').innerText = "No Trade Agreement";
-    }
-    
-    // Store current viewing country
+    document.getElementById('relation-status').innerHTML =
+        `<span style="color:${statusColor};font-weight:bold;">${statusText} (${relations.relationScore})</span>`;
+    document.getElementById('trade-volume').innerText =
+        relations.tradeEstablished ? formatMoney(relations.tradeVolume) : "No Trade Agreement";
+
     gameState.viewingCountry = country;
 };
 
 window.returnToOwnCountry = () => {
-    console.log("Returning to own country - game was never paused");
-    
-    // Hide country info panel
     const infoPanel = document.getElementById('country-info-panel');
-    if (infoPanel) {
-        infoPanel.style.display = 'none';
-        console.log("Country info panel hidden");
-    } else {
-        console.error("country-info-panel element not found!");
-    }
-    
-    // Show tactical HUD
+    if (infoPanel) infoPanel.style.display = 'none';
     const tacticalHud = document.getElementById('tactical-hud');
-    if (tacticalHud) {
-        tacticalHud.style.display = 'block';
-        console.log("Tactical HUD shown");
-    } else {
-        console.error("tactical-hud element not found!");
-    }
-    
+    if (tacticalHud) tacticalHud.style.display = 'block';
     gameState.viewingCountry = null;
-    // No need to unpause since we never paused
-    
-    console.log("Returned to own country view");
 };
 
-window.closeCountryInfo = () => {
-    returnToOwnCountry();
-};
+window.closeCountryInfo = () => returnToOwnCountry();
 
 window.improveRelations = () => {
     if (!gameState.viewingCountry) return;
-    
-    const cost = 50000; // 50B
-    
-    if (gameState.treasury < cost) {
-        alert("Insufficient funds! Need $50B to improve relations.");
-        return;
-    }
-    
+    const cost = 50000;
+    if (gameState.treasury < cost) { alert("Insufficient funds! Need $50B to improve relations."); return; }
+
     const countryName = gameState.viewingCountry.name.common;
-    const relations = gameState.diplomaticRelations[countryName];
-    
-    // Cannot improve if at war
-    if (relations.relationScore === -100) {
-        alert("Cannot improve relations during wartime! Peace treaty required.");
-        return;
-    }
-    
-    // Deduct cost
+    const relations   = gameState.diplomaticRelations[countryName];
+    if (relations.relationScore === -100) { alert("Cannot improve relations during wartime!"); return; }
+
     gameState.treasury -= cost;
     renderTreasury();
-    
-    // Improve relations (max 100)
+
     const oldScore = relations.relationScore;
     relations.relationScore = Math.min(100, relations.relationScore + 10);
-    
-    // Remove from war list if leaving war state
-    if (oldScore === -100 && relations.relationScore > -100) {
-        if (gameState.warWith) {
-            gameState.warWith = gameState.warWith.filter(c => c !== countryName);
-        }
-        // Happiness boost from ending war
+
+    if (oldScore === -100) {
+        gameState.warWith = gameState.warWith.filter(c => c !== countryName);
         gameState.happiness = Math.min(100, gameState.happiness + 5);
         renderHappiness();
     }
-    
-    // Small happiness boost from diplomacy
-    if (relations.relationScore >= 50) {
-        gameState.happiness = Math.min(100, gameState.happiness + 2);
-        renderHappiness();
-    }
-    
-    // Update display
-    const statusText = getRelationshipStatus(relations.relationScore);
+    if (relations.relationScore >= 50) { gameState.happiness = Math.min(100, gameState.happiness + 2); renderHappiness(); }
+
+    const statusText  = getRelationshipStatus(relations.relationScore);
     const statusColor = getRelationshipColor(relations.relationScore);
-    document.getElementById('relation-status').innerHTML = 
-        `<span style="color: ${statusColor}; font-weight: bold;">${statusText} (${relations.relationScore})</span>`;
-    
-    // Add news
+    document.getElementById('relation-status').innerHTML =
+        `<span style="color:${statusColor};font-weight:bold;">${statusText} (${relations.relationScore})</span>`;
     gameState.newsHeadlines.push(`🤝 ${gameState.selectedCountry.name.common} improves diplomatic ties with ${countryName}`);
-    
     alert(`Relations improved!\nNew status: ${statusText} (${relations.relationScore})`);
 };
 
 window.establishTrade = () => {
     if (!gameState.viewingCountry) return;
-    
-    const cost = 100000; // 100B
-    
-    if (gameState.treasury < cost) {
-        alert("Insufficient funds! Need $100B to establish trade.");
-        return;
-    }
-    
+    const cost = 100000;
+    if (gameState.treasury < cost) { alert("Insufficient funds! Need $100B."); return; }
+
     const countryName = gameState.viewingCountry.name.common;
-    const relations = gameState.diplomaticRelations[countryName];
-    
-    if (relations.tradeEstablished) {
-        alert("Trade agreement already exists!");
-        return;
-    }
-    
-    if (relations.relationScore < 10) {
-        alert("Relations too poor! Need at least Friend status (+10) to establish trade.");
-        return;
-    }
-    
-    // Deduct cost
+    const relations   = gameState.diplomaticRelations[countryName];
+    if (relations.tradeEstablished) { alert("Trade agreement already exists!"); return; }
+    if (relations.relationScore < 10) { alert("Need at least Friend status (+10) to trade."); return; }
+
     gameState.treasury -= cost;
     renderTreasury();
-    
-    // Establish trade
+
     relations.tradeEstablished = true;
-    const partnerGDP = gameState.viewingCountry.gdp || 100000;
-    relations.tradeVolume = Math.floor((gameState.gdp + partnerGDP) * 0.01);
-    
-    // Update display
+    relations.tradeVolume = Math.floor((gameState.gdp + (gameState.viewingCountry.gdp || 100000)) * 0.01);
     document.getElementById('trade-volume').innerText = formatMoney(relations.tradeVolume);
-    
-    // Add news
-    gameState.newsHeadlines.push(`📦 ${gameState.selectedCountry.name.common} signs trade deal with ${countryName} - $${(relations.tradeVolume / 1000).toFixed(0)}B annually`);
-    
-    alert(`Trade established! Annual trade volume: ${formatMoney(relations.tradeVolume)}`);
+    gameState.newsHeadlines.push(`📦 ${gameState.selectedCountry.name.common} signs trade deal with ${countryName}`);
+    alert(`Trade established! Annual volume: ${formatMoney(relations.tradeVolume)}`);
 };
 
 window.worsenRelations = () => {
     if (!gameState.viewingCountry) return;
-    
     const countryName = gameState.viewingCountry.name.common;
-    const relations = gameState.diplomaticRelations[countryName];
-    
-    // Confirm action
-    if (!confirm(`Are you sure you want to worsen relations with ${countryName}?\nThis will decrease relations by 15 points.`)) {
-        return;
-    }
-    
-    // Worsen relations (min -100)
+    const relations   = gameState.diplomaticRelations[countryName];
+    if (!confirm(`Worsen relations with ${countryName}? (-15 points)`)) return;
+
     relations.relationScore = Math.max(-100, relations.relationScore - 15);
-    
-    // Cancel trade if relations drop too low
+
     if (relations.tradeEstablished && relations.relationScore < 0) {
         relations.tradeEstablished = false;
         relations.tradeVolume = 0;
         document.getElementById('trade-volume').innerText = "No Trade Agreement";
         alert("Trade agreement cancelled due to poor relations!");
     }
-    
-    // Update display
-    const statusText = getRelationshipStatus(relations.relationScore);
+
+    const statusText  = getRelationshipStatus(relations.relationScore);
     const statusColor = getRelationshipColor(relations.relationScore);
-    document.getElementById('relation-status').innerHTML = 
-        `<span style="color: ${statusColor}; font-weight: bold;">${statusText} (${relations.relationScore})</span>`;
-    
-    // Add news
+    document.getElementById('relation-status').innerHTML =
+        `<span style="color:${statusColor};font-weight:bold;">${statusText} (${relations.relationScore})</span>`;
+
     if (relations.relationScore === -100) {
-        // Add to war list
         if (!gameState.warWith) gameState.warWith = [];
-        if (!gameState.warWith.includes(countryName)) {
-            gameState.warWith.push(countryName);
-        }
-        
-        // Major happiness loss from war
+        if (!gameState.warWith.includes(countryName)) gameState.warWith.push(countryName);
         gameState.happiness = Math.max(0, gameState.happiness - 15);
         renderHappiness();
-        
         gameState.newsHeadlines.push(`⚔️ ${gameState.selectedCountry.name.common} declares WAR on ${countryName}!`);
-        alert(`⚔️ WAR DECLARED!\n${countryName} is now at war with you!\n\n⚠️ Citizen happiness decreased by 15%!`);
+        alert(`⚔️ WAR DECLARED with ${countryName}!\n\n⚠️ Citizen happiness -15%!`);
     } else {
         gameState.newsHeadlines.push(`💢 ${gameState.selectedCountry.name.common} tensions rise with ${countryName}`);
         alert(`Relations worsened!\nNew status: ${statusText} (${relations.relationScore})`);
     }
 };
 
+// ============================================================
+// HUD / HAPPINESS
+// ============================================================
 function updateHud() {
     if (!gameState.selectedCountry) return;
-    
     buildGdpRanking();
     const rank = getCountryRank(gameState.selectedCountry.name.common);
-    
     const rankEl = document.getElementById('rank-display');
-    if (rankEl) {
-        rankEl.innerText = `🏆 GDP RANK: #${rank}`;
-    }
-    
-    // Update happiness display
+    if (rankEl) rankEl.innerText = `🏆 GDP RANK: #${rank}`;
     renderHappiness();
 }
 
 function renderHappiness() {
     const happiness = Math.max(0, Math.min(100, gameState.happiness));
-    
-    // Show happiness gauge
     const gaugeEl = document.getElementById('happiness-gauge');
-    if (gaugeEl) {
-        gaugeEl.style.display = 'block';
-    }
-    
+    if (gaugeEl) gaugeEl.style.display = 'block';
+
     const percentEl = document.getElementById('happiness-percent');
-    const barEl = document.getElementById('happiness-bar');
-    
-    if (percentEl) {
-        percentEl.innerText = `${happiness}%`;
-    }
-    
+    const barEl     = document.getElementById('happiness-bar');
+    if (percentEl) percentEl.innerText = `${happiness}%`;
     if (barEl) {
         barEl.style.width = `${happiness}%`;
-        
-        // Change color based on happiness
-        if (happiness <= 20) {
-            barEl.style.background = '#ff0000';
-        } else if (happiness <= 40) {
-            barEl.style.background = '#ff6600';
-        } else if (happiness <= 60) {
-            barEl.style.background = '#ffaa00';
-        } else {
-            barEl.style.background = '#00ff41';
-        }
+        barEl.style.background =
+            happiness <= 20 ? '#ff0000' :
+            happiness <= 40 ? '#ff6600' :
+            happiness <= 60 ? '#ffaa00' : '#00ff41';
     }
-    
-    // Show/hide warning
+
     const warningOverlay = document.getElementById('warning-overlay');
     const warningMessage = document.getElementById('warning-message');
-    
     if (happiness <= 20 && happiness > 0) {
-        if (warningOverlay) warningOverlay.classList.add('active');
-        if (warningMessage) warningMessage.classList.add('active');
+        warningOverlay?.classList.add('active');
+        warningMessage?.classList.add('active');
     } else {
-        if (warningOverlay) warningOverlay.classList.remove('active');
-        if (warningMessage) warningMessage.classList.remove('active');
+        warningOverlay?.classList.remove('active');
+        warningMessage?.classList.remove('active');
     }
 }
 
 function updateHappiness() {
-    // Factors that affect happiness
     let change = 0;
-    
-    // Low treasury makes people unhappy
     const treasuryRatio = gameState.treasury / gameState.gdp;
-    if (treasuryRatio < 0.1) {
-        change -= 5; // Broke government
-    } else if (treasuryRatio > 0.4) {
-        change += 2; // Good reserves
-    }
-    
-    // Being at war decreases happiness
-    if (gameState.warWith && gameState.warWith.length > 0) {
-        change -= 10 * gameState.warWith.length;
-    }
-    
-    // Random events
-    const random = Math.random();
-    if (random < 0.1) {
-        change -= 3; // Bad year
-    } else if (random < 0.2) {
-        change += 3; // Good year
-    }
-    
-    // Base drift (slow decline if doing nothing)
-    change -= 1;
-    
-    // Update happiness
+    if (treasuryRatio < 0.1)  change -= 5;
+    else if (treasuryRatio > 0.4) change += 2;
+    if (gameState.warWith?.length > 0) change -= 10 * gameState.warWith.length;
+    const r = Math.random();
+    if (r < 0.1) change -= 3;
+    else if (r < 0.2) change += 3;
+    change -= 1; // base drift
     gameState.happiness = Math.max(0, Math.min(100, gameState.happiness + change));
-    
-    console.log(`Happiness: ${gameState.happiness}% (${change > 0 ? '+' : ''}${change})`);
 }
 
 function triggerGameOver() {
-    console.log("GAME OVER!");
     gameState.isPaused = true;
-    gameState.inGame = false;
-    
-    const gameOverScreen = document.getElementById('game-over-screen');
-    const gameOverMessage = document.getElementById('game-over-message');
-    
-    // Determine game over message
-    let message = "";
-    
-    // Check if at war
-    const atWar = gameState.warWith && gameState.warWith.length > 0;
-    
+    gameState.inGame   = false;
+    const atWar = gameState.warWith?.length > 0;
+    let message;
     if (atWar) {
         const enemy = gameState.warWith[Math.floor(Math.random() * gameState.warWith.length)];
-        const warMessages = [
+        const msgs = [
             `YOUR COUNTRY HAS BEEN OCCUPIED BY ${enemy.toUpperCase()}!`,
             `A NUKE HAS EXPLODED IN YOUR TERRITORY!`,
             `YOU WERE CAUGHT AS A PRISONER OF WAR!`
         ];
-        message = "YOU FAILED: " + warMessages[Math.floor(Math.random() * warMessages.length)];
+        message = "YOU FAILED: " + msgs[Math.floor(Math.random() * msgs.length)];
     } else {
-        const peacetimeMessages = [
+        const msgs = [
             "A RIOT HAS SUCCEEDED AND YOU GOT THROWN OUT!",
             "A COUP HAS SUCCEEDED IN TAKING OVER YOUR GOVERNMENT!",
             "YOU GOT ASSASSINATED BY THE HATERS!"
         ];
-        message = "YOU FAILED: " + peacetimeMessages[Math.floor(Math.random() * peacetimeMessages.length)];
+        message = "YOU FAILED: " + msgs[Math.floor(Math.random() * msgs.length)];
     }
-    
-    if (gameOverMessage) {
-        gameOverMessage.innerText = message;
-    }
-    
-    if (gameOverScreen) {
-        gameOverScreen.classList.add('active');
-    }
-    
-    // Add to news
+    const screen = document.getElementById('game-over-screen');
+    const msgEl  = document.getElementById('game-over-message');
+    if (msgEl)  msgEl.innerText = message;
+    if (screen) screen.classList.add('active');
     gameState.newsHeadlines.push(`💀 ${gameState.selectedCountry.name.common} government has fallen!`);
 }
 
-function togglePause() { 
-    gameState.isPaused = !gameState.isPaused; 
-    
-    console.log("Toggle pause:", gameState.isPaused ? "PAUSED" : "PLAYING");
-    
-    document.getElementById('pause-btn').innerText = gameState.isPaused ? "▶" : "⏸"; 
-    
-    // Reset lastTick when unpausing to prevent time jump
-    if (!gameState.isPaused) {
-        lastTick = performance.now();
-        dayAccumulator = 0;
-        console.log("Unpaused - reset time tracking");
+// ============================================================
+// TIME CONTROLS
+// ============================================================
+function togglePause() {
+    gameState.isPaused = !gameState.isPaused;
+    document.getElementById('pause-btn').innerText = gameState.isPaused ? "▶" : "⏸";
+    if (!gameState.isPaused) { lastTick = performance.now(); dayAccumulator = 0; }
+}
+
+function adjustSpeed(delta) {
+    const s = gameState.gameSpeed + delta;
+    if (s >= 1 && s <= 5) {
+        gameState.gameSpeed = s;
+        document.querySelectorAll('.speed-bar').forEach((b, i) => b.classList.toggle('active', i < s));
     }
 }
 
-// ==================== ACTION WINDOW FUNCTIONS ====================
+window.addEventListener("resize", () => {
+    if (!projection || !svg) return;
+    projection.scale(window.innerWidth / 6.5).translate([window.innerWidth / 2, window.innerHeight * 0.5]);
+    svg.attr("width", window.innerWidth).attr("height", window.innerHeight);
+});
 
-window.sellResources = () => {
-    alert("💰 SELL RESOURCES\n\nThis feature is coming soon!\nYou'll be able to sell your resources to other countries for profit.");
+// ============================================================
+// ACTION WINDOW BUTTONS
+// ============================================================
+window.manageMilitary  = () => alert("⚔️ MILITARY\n\nComing soon!");
+window.createGroup     = () => alert("👥 CREATE GROUP\n\nComing soon!");
+window.viewTaxGraph    = () => alert("📊 TAX GRAPH\n\nComing soon!");
+window.manageSanctions = () => alert("🚫 SANCTIONS\n\nComing soon!");
+window.buildService    = () => openBuildService();
+
+// ============================================================
+// TRADE WINDOW (BUY & SELL)
+// ============================================================
+let currentTradeMode = 'buy';
+
+function openTradeWindow(mode) {
+    currentTradeMode = mode;
+    const existing = document.getElementById('trade-overlay');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'trade-overlay';
+    overlay.style.cssText = `
+        position:fixed; inset:0; background:rgba(0,0,0,0.95);
+        z-index:12000; display:flex; flex-direction:column;
+        font-family:'Courier New',monospace; color:#00ff41;`;
+
+    const isBuy    = mode === 'buy';
+    const accent   = isBuy ? '#00ddff' : '#00ff41';
+    const title    = isBuy ? '🛒 BUY RESOURCES' : '💰 SELL RESOURCES';
+    const btnLabel = isBuy ? 'BUY' : 'SELL';
+
+    let categoriesHTML = '';
+    for (const category of RESOURCE_CATEGORIES_TRADABLE) {
+        const capacity  = gameState.resourceCapacity[category] || DEFAULT_CAPACITY;
+        const used      = getCategoryUsed(category);
+        const freeSpace = capacity - used;
+
+        let rowsHTML = '';
+        economyState.resources[category].forEach(item => {
+            const price = RESOURCE_PRICE_PER_TONNE[item] ?? 0;
+            if (price === 0) return;
+
+            const stock   = gameState.resourceStock[category]?.[item] ?? 0;
+            const pct     = economyState.values[category]?.[item]?.percent ?? 0;
+            const maxQty  = isBuy
+                ? Math.min(freeSpace, price > 0 ? Math.floor(gameState.treasury / price) : 0)
+                : stock;
+            const safeId  = `${category}||${item}`.replace(/\s/g,'_').replace(/&/g,'AND');
+            const pricePer1k = (price * 1000).toFixed(price >= 0.1 ? 2 : price >= 0.001 ? 4 : 6);
+
+            rowsHTML += `
+            <div class="trade-row" id="row-${safeId}">
+                <div class="trade-row-left">
+                    <span class="trade-item-name">${item}</span>
+                    <span class="trade-item-meta">
+                        ${isBuy
+                            ? `Free: <b>${formatTonnes(freeSpace)}</b>`
+                            : `Stock: <b>${formatTonnes(stock)}</b>`}
+                        &nbsp;|&nbsp; $${pricePer1k}M / 1K t
+                    </span>
+                </div>
+                <div class="trade-row-right">
+                    <input type="number" id="qty-${safeId}" min="0" max="${maxQty}" step="1000"
+                        value="0" oninput="updateTradeCost('${safeId}','${mode}')"
+                        style="width:130px;background:#000;border:1px solid ${accent};
+                               color:${accent};padding:5px 8px;font-family:monospace;font-size:1em;">
+                    <span id="cost-${safeId}" class="trade-cost-label">$0</span>
+                    <button onclick="executeTrade('${category}','${item}','${mode}','${safeId}')"
+                        class="trade-exec-btn" style="border-color:${accent};color:${accent};">
+                        ${btnLabel}
+                    </button>
+                </div>
+            </div>`;
+        });
+
+        if (!rowsHTML) continue;
+
+        categoriesHTML += `
+        <div class="trade-cat-block">
+            <div class="trade-cat-header">
+                <span>${category.toUpperCase()}</span>
+                <span class="trade-cat-cap">
+                    📦 ${formatTonnes(used)} / ${formatTonnes(capacity)} used
+                    &nbsp;|&nbsp; Free: ${formatTonnes(Math.max(0, freeSpace))}
+                </span>
+            </div>
+            ${rowsHTML}
+        </div>`;
+    }
+
+    overlay.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;
+        padding:18px 30px;border-bottom:3px solid ${accent};flex-shrink:0;">
+        <h2 style="margin:0;color:${accent};font-size:1.8em;letter-spacing:3px;">${title}</h2>
+        <span style="color:#aaa;font-size:1em;">💰 Treasury: ${formatMoney(gameState.treasury)}</span>
+        <button onclick="closeTrade()"
+            style="background:#000;border:2px solid #ff4444;color:#ff4444;
+                   padding:8px 20px;cursor:pointer;font-family:monospace;font-size:1em;letter-spacing:2px;">
+            ✕ CLOSE
+        </button>
+    </div>
+    <div id="trade-body" style="overflow-y:auto;flex:1;padding:20px 30px;">
+        ${categoriesHTML}
+    </div>`;
+
+    document.body.appendChild(overlay);
+    injectTradeCSS();
+}
+
+function injectTradeCSS() {
+    if (document.getElementById('trade-css')) return;
+    const s = document.createElement('style');
+    s.id = 'trade-css';
+    s.textContent = `
+    .trade-cat-block {
+        margin-bottom: 28px;
+        border: 1px solid #003300;
+        border-radius: 6px;
+        overflow: hidden;
+    }
+    .trade-cat-header {
+        background: #001a00;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 16px;
+        font-size: 1em;
+        font-weight: bold;
+        color: #00ff41;
+        border-bottom: 1px solid #003300;
+    }
+    .trade-cat-cap { color: #aaa; font-size: 0.9em; font-weight: normal; }
+    .trade-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 16px;
+        border-bottom: 1px solid #001500;
+    }
+    .trade-row:last-child { border-bottom: none; }
+    .trade-row:hover { background: #000d00; }
+    .trade-row-left { display: flex; flex-direction: column; gap: 3px; }
+    .trade-item-name { color: #00ff41; font-size: 1.05em; font-weight: bold; }
+    .trade-item-meta { color: #666; font-size: 0.85em; }
+    .trade-row-right { display: flex; align-items: center; gap: 10px; }
+    .trade-cost-label {
+        min-width: 120px;
+        color: #aaa;
+        font-size: 0.9em;
+        text-align: right;
+    }
+    .trade-exec-btn {
+        background: #000;
+        border: 2px solid;
+        padding: 6px 16px;
+        cursor: pointer;
+        font-family: monospace;
+        font-size: 0.95em;
+        font-weight: bold;
+        letter-spacing: 2px;
+        transition: all 0.2s;
+    }
+    .trade-exec-btn:hover { filter: brightness(1.4); }
+    `;
+    document.head.appendChild(s);
+}
+
+window.updateTradeCost = (safeId, mode) => {
+    const input  = document.getElementById(`qty-${safeId}`);
+    const costEl = document.getElementById(`cost-${safeId}`);
+    if (!input || !costEl) return;
+
+    const parts  = safeId.replace(/_/g,' ').split('||');
+    const item   = parts.slice(1).join('||').replace(/AND/g,'&');
+    const tonnes = parseFloat(input.value) || 0;
+    const price  = RESOURCE_PRICE_PER_TONNE[item] ?? 0;
+    const total  = tonnes * price;
+    const isBuy  = mode === 'buy';
+
+    if (total > 0) {
+        costEl.innerText  = (isBuy ? '−' : '+') + formatMoney(total);
+        costEl.style.color = isBuy ? '#ff8844' : '#00ff41';
+    } else {
+        costEl.innerText  = '$0';
+        costEl.style.color = '#aaa';
+    }
 };
 
-window.manageMilitary = () => {
-    alert("⚔️ MILITARY\n\nThis feature is coming soon!\nYou'll be able to:\n- Build military forces\n- Train troops\n- Develop weapons\n- Defend your nation");
+window.executeTrade = (category, item, mode, safeId) => {
+    const input  = document.getElementById(`qty-${safeId}`);
+    if (!input) return;
+    const tonnes = Math.floor(parseFloat(input.value) || 0);
+    if (tonnes <= 0) { alert("Enter a valid amount of tonnes first!"); return; }
+
+    const price   = RESOURCE_PRICE_PER_TONNE[item] ?? 0;
+    const cost    = tonnes * price;
+    const isBuy   = mode === 'buy';
+
+    if (isBuy) {
+        if (gameState.treasury < cost) {
+            alert(`❌ Not enough funds!\nNeed: ${formatMoney(cost)}\nYou have: ${formatMoney(gameState.treasury)}`);
+            return;
+        }
+        const capacity  = gameState.resourceCapacity[category] || DEFAULT_CAPACITY;
+        const used      = getCategoryUsed(category);
+        const free      = capacity - used;
+        if (tonnes > free) {
+            alert(`❌ Not enough storage!\nFree space: ${formatTonnes(free)}\nYou tried to buy: ${formatTonnes(tonnes)}`);
+            return;
+        }
+        gameState.treasury -= cost;
+        gameState.resourceStock[category][item] = (gameState.resourceStock[category][item] || 0) + tonnes;
+        syncResourcePercents(category);
+        renderTreasury();
+        renderEconomyUI();
+        gameState.newsHeadlines.push(`🛒 ${gameState.selectedCountry.name.common} bought ${formatTonnes(tonnes)} of ${item} for ${formatMoney(cost)}`);
+        alert(`✅ Purchased ${formatTonnes(tonnes)} of ${item}\nCost: ${formatMoney(cost)}`);
+
+    } else {
+        const stock = gameState.resourceStock[category]?.[item] ?? 0;
+        if (tonnes > stock) {
+            alert(`❌ You only have ${formatTonnes(stock)} of ${item} in storage!`);
+            return;
+        }
+        gameState.treasury = Math.min(gameState.treasury + cost, MAX_TREASURY);
+        gameState.resourceStock[category][item] -= tonnes;
+        syncResourcePercents(category);
+        renderTreasury();
+        renderEconomyUI();
+        gameState.newsHeadlines.push(`💰 ${gameState.selectedCountry.name.common} sold ${formatTonnes(tonnes)} of ${item} for ${formatMoney(cost)}`);
+        alert(`✅ Sold ${formatTonnes(tonnes)} of ${item}\nRevenue: ${formatMoney(cost)}`);
+    }
+
+    // Refresh the window so all values update
+    closeTrade();
+    openTradeWindow(mode);
 };
 
-window.buildService = () => {
-    alert("🏗️ BUILD SERVICE\n\nThis feature is coming soon!\nYou'll be able to:\n- Build infrastructure\n- Develop public services\n- Create hospitals and schools\n- Improve citizen happiness");
+window.closeTrade = () => {
+    const el = document.getElementById('trade-overlay');
+    if (el) el.remove();
 };
 
-window.createGroup = () => {
-    alert("👥 CREATE GROUP\n\nThis feature is coming soon!\nYou'll be able to:\n- Form international alliances\n- Create trade blocs\n- Establish economic unions\n- Coordinate with allies");
+window.sellResources = () => openTradeWindow('sell');
+window.buyResources  = () => openTradeWindow('buy');
+
+// ============================================================
+// BUILD SERVICE (stub + capacity upgrades)
+// ============================================================
+function openBuildService() {
+    const existing = document.getElementById('build-overlay');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'build-overlay';
+    overlay.style.cssText = `
+        position:fixed; inset:0; background:rgba(0,0,0,0.95);
+        z-index:12000; display:flex; flex-direction:column;
+        font-family:'Courier New',monospace; color:#00ff41;`;
+
+    let upgradesHTML = '';
+    for (const category of RESOURCE_CATEGORIES_TRADABLE) {
+        const cap      = gameState.resourceCapacity[category] || DEFAULT_CAPACITY;
+        const level    = Math.round(cap / DEFAULT_CAPACITY); // 1 = base, 2 = 2M, etc.
+        const upgCost  = level * 500_000; // $500B * level
+        upgradesHTML += `
+        <div class="build-row">
+            <div class="build-info">
+                <span class="build-cat">${category}</span>
+                <span class="build-meta">
+                    Current capacity: <b>${formatTonnes(cap)}</b>
+                    &nbsp;|&nbsp; Level ${level}
+                    &nbsp;→&nbsp; Upgrade to <b>${formatTonnes(cap + DEFAULT_CAPACITY)}</b>
+                </span>
+            </div>
+            <div class="build-action">
+                <span style="color:#ffaa00;margin-right:12px;">Cost: ${formatMoney(upgCost)}</span>
+                <button onclick="upgradeCapacity('${category}')"
+                    style="background:#000;border:2px solid #ffaa00;color:#ffaa00;
+                           padding:7px 18px;cursor:pointer;font-family:monospace;
+                           font-size:0.95em;font-weight:bold;letter-spacing:2px;">
+                    UPGRADE
+                </button>
+            </div>
+        </div>`;
+    }
+
+    overlay.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;
+        padding:18px 30px;border-bottom:3px solid #ffaa00;flex-shrink:0;">
+        <h2 style="margin:0;color:#ffaa00;font-size:1.8em;letter-spacing:3px;">🏗️ BUILD SERVICE</h2>
+        <span style="color:#aaa;">💰 Treasury: ${formatMoney(gameState.treasury)}</span>
+        <button onclick="closeBuildService()"
+            style="background:#000;border:2px solid #ff4444;color:#ff4444;
+                   padding:8px 20px;cursor:pointer;font-family:monospace;font-size:1em;letter-spacing:2px;">
+            ✕ CLOSE
+        </button>
+    </div>
+    <div style="overflow-y:auto;flex:1;padding:20px 30px;">
+        <p style="color:#aaa;margin-bottom:24px;font-size:0.95em;">
+            Upgrade your resource storage capacity. Each upgrade adds <b style="color:#ffaa00">+1 Million tonnes</b>
+            to that category. Upgrades allow you to hold more stock for trading.
+        </p>
+        <div id="build-upgrades">${upgradesHTML}</div>
+        <hr style="border-color:#003300;margin:30px 0;">
+        <p style="color:#555;text-align:center;">More construction options coming in future updates...</p>
+    </div>`;
+
+    document.body.appendChild(overlay);
+
+    const s = document.createElement('style');
+    s.id = 'build-css';
+    s.textContent = `
+    .build-row {
+        display:flex; justify-content:space-between; align-items:center;
+        padding:14px 18px; border:1px solid #002800; border-radius:6px;
+        margin-bottom:12px; background:#000d00;
+    }
+    .build-row:hover { background:#001500; }
+    .build-info { display:flex; flex-direction:column; gap:4px; }
+    .build-cat  { color:#ffaa00; font-size:1.05em; font-weight:bold; }
+    .build-meta { color:#888; font-size:0.88em; }
+    .build-action { display:flex; align-items:center; }
+    `;
+    if (!document.getElementById('build-css')) document.head.appendChild(s);
+}
+
+window.upgradeCapacity = (category) => {
+    const cap     = gameState.resourceCapacity[category] || DEFAULT_CAPACITY;
+    const level   = Math.round(cap / DEFAULT_CAPACITY);
+    const cost    = level * 500_000;
+
+    if (gameState.treasury < cost) {
+        alert(`❌ Not enough funds!\nNeed: ${formatMoney(cost)}\nYou have: ${formatMoney(gameState.treasury)}`);
+        return;
+    }
+    if (!confirm(`Upgrade ${category} storage?\n+1M tonnes for ${formatMoney(cost)}`)) return;
+
+    gameState.treasury -= cost;
+    gameState.resourceCapacity[category] = cap + DEFAULT_CAPACITY;
+    renderTreasury();
+    gameState.newsHeadlines.push(`🏗️ ${gameState.selectedCountry.name.common} expanded ${category} storage to ${formatTonnes(gameState.resourceCapacity[category])}`);
+    alert(`✅ Upgraded!\n${category} capacity is now ${formatTonnes(gameState.resourceCapacity[category])}`);
+
+    // Refresh build window
+    closeBuildService();
+    openBuildService();
 };
 
-window.buyResources = () => {
-    alert("🛒 BUY RESOURCES\n\nThis feature is coming soon!\nYou'll be able to buy resources from other countries to boost your economy.");
-};
-
-window.viewTaxGraph = () => {
-    alert("📊 TAX GRAPH\n\nThis feature is coming soon!\nYou'll be able to:\n- View tax collection data\n- Adjust tax rates\n- See revenue trends\n- Optimize your economy");
-};
-
-window.manageSanctions = () => {
-    alert("🚫 SANCTIONS\n\nThis feature is coming soon!\nYou'll be able to:\n- Impose sanctions on other countries\n- Manage existing sanctions\n- View sanctions against you\n- Negotiate lifting sanctions");
+window.closeBuildService = () => {
+    const el = document.getElementById('build-overlay');
+    if (el) el.remove();
 };
 
 window.giveUp = () => {
-    if (!confirm("Are you sure you want to give up?\n\nYou will resign from being president and the game will end.")) {
-        return;
-    }
-    
-    console.log("Player resigned!");
+    if (!confirm("Are you sure you want to give up?\n\nYou will resign from being president and the game will end.")) return;
     gameState.isPaused = true;
-    gameState.inGame = false;
-    
-    const gameOverScreen = document.getElementById('game-over-screen');
-    const gameOverMessage = document.getElementById('game-over-message');
-    
-    if (gameOverMessage) {
-        gameOverMessage.innerText = "YOU GAVE UP: YOU RESIGNED FROM BEING A PRESIDENT";
-    }
-    
-    if (gameOverScreen) {
-        gameOverScreen.classList.add('active');
-    }
-    
-    // Add to news
+    gameState.inGame   = false;
+    const screen = document.getElementById('game-over-screen');
+    const msgEl  = document.getElementById('game-over-message');
+    if (msgEl)  msgEl.innerText = "YOU GAVE UP: YOU RESIGNED FROM BEING A PRESIDENT";
+    if (screen) screen.classList.add('active');
     gameState.newsHeadlines.push(`📰 ${gameState.selectedCountry.name.common} president has resigned from office!`);
 };
 
-// ==================== CHANGELOG FUNCTIONS ====================
-
+// ============================================================
+// CHANGELOG
+// ============================================================
 const changelogVersions = [
     {
-        version: "v1.0.2 - Fixing scroll issues",
+        version: "v1.1.0 - 1st Major Update",
         changes: [
-            "⬇️ Fixed scrolling in management window",
+            "💰 Added buying & selling resources features"
         ]
     },
     {
-        version: "v1.0.1 - Remaking the news and resources system",
+        version: "v1.0.2 - Fixing the scrolling issue",
         changes: [
-            "📄 Fixing the news story generation logic",
-            "📊 Fixing the resources system to be more realistic"
+            "⬇️ Fixed the scrolling issue in the management window",
+            "📊 Rewrote new mechanics for resources"
+        ]
+    },
+    {
+        version: "v1.0.1 - Economy & UI Update",
+        changes: [
+            "📄 Recreated news system with improved logic",
+            "📊 Fixed the resources system to be more realistic"
         ]
     },
     {
         version: "v1.0.0 - Initial Release",
         changes: [
-            "🌍 100+ countries with real (maybe) GDP data",
+            "🌍 100+ countries with real GDP data",
             "💰 Rank-based starting treasury system",
             "📊 Dynamic economy with resources, inflation, unemployment",
             "🕐 Time controls (pause, 1x-5x speed)",
             "🗺️ Interactive world map",
             "💾 Save and load functionality",
             "🎮 Management window with scrollable resources",
-            "🎯 Country selection system",
-            "🎨 Full-width news bar design"
+            "🎨 Full-width news bar design",
+            "🎯 Country selection system"
         ]
     }
 ];
@@ -1987,135 +1562,39 @@ let currentChangelogIndex = 0;
 function renderChangelogVersion() {
     const version = changelogVersions[currentChangelogIndex];
     const display = document.getElementById('changelog-display');
-    
     if (!display) return;
-    
-    const changesList = version.changes.map(change => `<li>${change}</li>`).join('');
-    
-    display.innerHTML = `
-        <h2>${version.version}</h2>
-        <ul>${changesList}</ul>
-    `;
-    
-    // Update counter
+
+    display.innerHTML = `<h2>${version.version}</h2><ul>${version.changes.map(c => `<li>${c}</li>`).join('')}</ul>`;
+
     const currentNum = document.getElementById('current-version-num');
-    const totalNum = document.getElementById('total-versions');
+    const totalNum   = document.getElementById('total-versions');
     if (currentNum) currentNum.innerText = currentChangelogIndex + 1;
-    if (totalNum) totalNum.innerText = changelogVersions.length;
-    
-    // Update button states
+    if (totalNum)   totalNum.innerText   = changelogVersions.length;
+
     const prevBtn = document.getElementById('prev-version-btn');
     const nextBtn = document.getElementById('next-version-btn');
-    
-    if (prevBtn) {
-        prevBtn.disabled = currentChangelogIndex === 0;
-    }
-    
-    if (nextBtn) {
-        nextBtn.disabled = currentChangelogIndex === changelogVersions.length - 1;
-    }
+    if (prevBtn) prevBtn.disabled = currentChangelogIndex === 0;
+    if (nextBtn) nextBtn.disabled = currentChangelogIndex === changelogVersions.length - 1;
 }
 
 window.openChangelog = () => {
-    const mainMenu = document.getElementById('main-menu');
-    const changelogMenu = document.getElementById('changelog-menu');
-    
-    // COMPLETELY REPLACE main menu
-    if (mainMenu) mainMenu.style.display = 'none';
-    if (changelogMenu) changelogMenu.style.display = 'block';
-    
-    // Reset to first version and render
+    document.getElementById('menu-screen')?.style.setProperty('display', 'none');
+    const cl = document.getElementById('changelog-menu');
+    if (cl) cl.style.display = 'flex';
     currentChangelogIndex = 0;
     renderChangelogVersion();
-    
-    console.log("Changelog opened - main menu replaced");
 };
 
 window.closeChangelog = () => {
-    const mainMenu = document.getElementById('main-menu');
-    const changelogMenu = document.getElementById('changelog-menu');
-    
-    // RESTORE main menu
-    if (changelogMenu) changelogMenu.style.display = 'none';
-    if (mainMenu) mainMenu.style.display = 'block';
-    
-    console.log("Changelog closed - main menu restored");
+    document.getElementById('changelog-menu').style.display = 'none';
+    const ms = document.getElementById('menu-screen');
+    if (ms) ms.style.display = 'flex';
 };
 
 window.nextVersion = () => {
-    if (currentChangelogIndex < changelogVersions.length - 1) {
-        currentChangelogIndex++;
-        renderChangelogVersion();
-    }
+    if (currentChangelogIndex < changelogVersions.length - 1) { currentChangelogIndex++; renderChangelogVersion(); }
 };
 
 window.previousVersion = () => {
-    if (currentChangelogIndex > 0) {
-        currentChangelogIndex--;
-        renderChangelogVersion();
-    }
+    if (currentChangelogIndex > 0) { currentChangelogIndex--; renderChangelogVersion(); }
 };
-function adjustSpeed(delta) { 
-    let s = gameState.gameSpeed + delta; 
-    if (s >= 1 && s <= 5) { 
-        gameState.gameSpeed = s; 
-        document.querySelectorAll('.speed-bar').forEach((b, i) => b.classList.toggle('active', i < s)); 
-    } 
-}
-
-window.addEventListener("resize", () => {
-    if (!projection || !svg) return;
-
-    projection
-    .scale(window.innerWidth / 6.5)
-    .translate([
-        window.innerWidth / 2,
-        window.innerHeight * 0.5
-    ]);
-
-svg
-    .attr("width", window.innerWidth)
-    .attr("height", window.innerHeight);
-});
-
-function gameLoop() {
-    tick();
-    requestAnimationFrame(gameLoop);
-}
-
-// Watchdog to detect and fix stuck time
-let lastDateCheck = new Date();
-let lastDateValue = null;
-setInterval(() => {
-    if (gameState.inGame && !gameState.isPaused) {
-        const currentDateStr = gameState.gameDate.toISOString();
-        
-        // Check if date hasn't changed in 10 seconds
-        if (currentDateStr === lastDateValue) {
-            const timeSinceLastChange = Date.now() - lastDateCheck.getTime();
-            
-            if (timeSinceLastChange > 10000) {
-                console.error("TIME STUCK DETECTED!");
-                console.log("Attempting to fix...");
-                console.log("Current state:", {
-                    inGame: gameState.inGame,
-                    isPaused: gameState.isPaused,
-                    gameSpeed: gameState.gameSpeed,
-                    dayAccumulator: dayAccumulator,
-                    gameDate: gameState.gameDate
-                });
-                
-                // Reset time tracking
-                lastTick = performance.now();
-                dayAccumulator = 0;
-                
-                console.log("Time tracking reset. Game should continue.");
-            }
-        } else {
-            lastDateValue = currentDateStr;
-            lastDateCheck = new Date();
-        }
-    }
-}, 5000); // Check every 5 seconds
-
-gameLoop();
