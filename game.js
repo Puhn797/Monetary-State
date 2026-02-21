@@ -205,7 +205,10 @@ function initResourceStorage() {
         economyState.resources[category].forEach(item => {
             if (gameState.resourceStock[category][item] === undefined) {
                 const pct = (economyState.values[category]?.[item]?.percent ?? 0) / 100;
-                gameState.resourceStock[category][item] = Math.floor(pct * gameState.resourceCapacity[category]);
+                gameState.resourceStock[category][item] = Math.max(0, Math.floor(pct * gameState.resourceCapacity[category]));
+            } else {
+                // Ensure existing stock is non-negative
+                gameState.resourceStock[category][item] = Math.max(0, gameState.resourceStock[category][item]);
             }
         });
     }
@@ -214,7 +217,37 @@ function initResourceStorage() {
 function getCategoryUsed(category) {
     const stock = gameState.resourceStock[category];
     if (!stock) return 0;
-    return Object.values(stock).reduce((s, v) => s + v, 0);
+    return Object.values(stock).reduce((s, v) => s + Math.max(0, v), 0); // Ensure each value is non-negative
+}
+
+// Validate and clean resource data to prevent negatives
+function validateResourceData() {
+    for (const category of RESOURCE_CATEGORIES_TRADABLE) {
+        // Ensure capacity is positive
+        if (!gameState.resourceCapacity[category] || gameState.resourceCapacity[category] < 0) {
+            gameState.resourceCapacity[category] = DEFAULT_CAPACITY;
+        }
+        
+        // Ensure all stock values are non-negative
+        if (gameState.resourceStock[category]) {
+            for (const item in gameState.resourceStock[category]) {
+                if (gameState.resourceStock[category][item] < 0) {
+                    console.warn(`Fixed negative stock for ${category}/${item}: ${gameState.resourceStock[category][item]} → 0`);
+                    gameState.resourceStock[category][item] = 0;
+                }
+            }
+        }
+        
+        // Ensure all percent values are non-negative
+        if (economyState.values[category]) {
+            for (const item in economyState.values[category]) {
+                if (economyState.values[category][item].percent < 0) {
+                    console.warn(`Fixed negative percent for ${category}/${item}: ${economyState.values[category][item].percent}% → 0%`);
+                    economyState.values[category][item].percent = 0;
+                }
+            }
+        }
+    }
 }
 
 // Sync % display from actual stock numbers
@@ -230,18 +263,41 @@ function syncResourcePercents(category) {
         });
         return;
     }
+    
+    // Calculate new percentages
     economyState.resources[category].forEach(item => {
         if (economyState.values[category]?.[item]) {
-            const newPct = Math.round((gameState.resourceStock[category][item] / total) * 100);
-            economyState.values[category][item].change = newPct - economyState.values[category][item].percent;
+            const stock = gameState.resourceStock[category][item] || 0;
+            const newPct = Math.max(0, Math.round((stock / total) * 100)); // Ensure non-negative
+            const oldPct = economyState.values[category][item].percent;
+            economyState.values[category][item].change = newPct - oldPct;
             economyState.values[category][item].percent = newPct;
         }
     });
-    // Fix rounding drift
+    
+    // Fix rounding drift - distribute the difference
     const items = economyState.resources[category];
     const sum = items.reduce((s, item) => s + (economyState.values[category]?.[item]?.percent ?? 0), 0);
-    if (sum !== 100 && economyState.values[category]?.[items[0]]) {
-        economyState.values[category][items[0]].percent += (100 - sum);
+    
+    if (sum !== 100) {
+        const diff = 100 - sum;
+        // Find the item with the highest stock to adjust
+        let maxItem = items[0];
+        let maxStock = gameState.resourceStock[category][maxItem] || 0;
+        
+        items.forEach(item => {
+            const stock = gameState.resourceStock[category][item] || 0;
+            if (stock > maxStock) {
+                maxStock = stock;
+                maxItem = item;
+            }
+        });
+        
+        if (economyState.values[category]?.[maxItem]) {
+            const oldPct = economyState.values[category][maxItem].percent;
+            const newPct = Math.max(0, oldPct + diff); // Ensure non-negative
+            economyState.values[category][maxItem].percent = newPct;
+        }
     }
 }
 function tick() {
@@ -470,16 +526,21 @@ function renderEconomyUI() {
 
             for (const item in economyState.values[category]) {
                 const data = economyState.values[category][item];
+                
+                // Ensure percent is never negative (safety check)
+                const displayPercent = Math.max(0, data.percent || 0);
+                const displayChange = data.change || 0;
+                
                 let color = "#aaa";
                 if (item === "Waste") {
-                    if (data.change > 0) color = "#ff4444";
-                    if (data.change < 0) color = "#00ff41";
+                    if (displayChange > 0) color = "#ff4444";
+                    if (displayChange < 0) color = "#00ff41";
                 } else {
-                    if (data.change > 0) color = "#00ff41";
-                    if (data.change < 0) color = "#ff4444";
+                    if (displayChange > 0) color = "#00ff41";
+                    if (displayChange < 0) color = "#ff4444";
                 }
                 const li = document.createElement("li");
-                li.innerHTML = `${item}: ${data.percent}% <span style="color:${color}">(${data.change > 0 ? "+" : ""}${data.change}%)</span>`;
+                li.innerHTML = `${item}: ${displayPercent}% <span style="color:${color}">(${displayChange > 0 ? "+" : ""}${displayChange}%)</span>`;
                 list.appendChild(li);
             }
 
@@ -743,6 +804,8 @@ async function startSimulation(isLoad) {
             gameState.resourceCapacity = gameState.saveData.resourceCapacity ?? {};
             gameState.resourceStock    = gameState.saveData.resourceStock    ?? {};
             initResourceStorage(); // fills in any missing entries
+            validateResourceData(); // clean up any negative values
+            validateResourceData(); // clean up any negative values
 
             buildGdpRanking();
             const rank = getCountryRank(gameState.selectedCountry.name.common);
@@ -824,6 +887,7 @@ window.handleAction = () => {
             gameState.resourceCapacity = {};
             gameState.resourceStock    = {};
             initResourceStorage();
+            validateResourceData();
             renderHappiness();
 
             gameState.inGame   = true;
@@ -1160,6 +1224,234 @@ window.createGroup     = () => alert("👥 CREATE GROUP\n\nComing soon!");
 window.viewTaxGraph    = () => alert("📊 TAX GRAPH\n\nComing soon!");
 window.manageSanctions = () => alert("🚫 SANCTIONS\n\nComing soon!");
 window.buildService    = () => openBuildService();
+window.openGovernment  = () => openGovernmentWindow();
+
+// ============================================================
+// GOVERNMENT WINDOW
+// ============================================================
+function openGovernmentWindow() {
+    const existing = document.getElementById('government-overlay');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'government-overlay';
+    overlay.style.cssText = `
+        position:fixed; inset:0; background:rgba(0,0,0,0.95);
+        z-index:12000; display:flex; flex-direction:column;
+        font-family:'Courier New',monospace; color:#00ff41;`;
+
+    // Calculate some stats
+    const totalCapacity = RESOURCE_CATEGORIES_TRADABLE.reduce((sum, cat) => 
+        sum + (gameState.resourceCapacity[cat] || DEFAULT_CAPACITY), 0);
+    const totalUsed = RESOURCE_CATEGORIES_TRADABLE.reduce((sum, cat) => 
+        sum + getCategoryUsed(cat), 0);
+    const utilization = totalCapacity > 0 ? ((totalUsed / totalCapacity) * 100).toFixed(1) : 0;
+    
+    // Relations summary
+    const allRelations = Object.keys(gameState.diplomaticRelations);
+    const allies = allRelations.filter(c => gameState.diplomaticRelations[c].relationScore >= 50);
+    const enemies = allRelations.filter(c => gameState.diplomaticRelations[c].relationScore <= -50);
+    const atWar = gameState.warWith?.length || 0;
+
+    overlay.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;
+        padding:18px 30px;border-bottom:3px solid #00dd99;flex-shrink:0;">
+        <h2 style="margin:0;color:#00dd99;font-size:1.8em;letter-spacing:3px;">🏛️ GOVERNMENT</h2>
+        <span style="color:#aaa;">${gameState.selectedCountry?.name.common.toUpperCase()}</span>
+        <button onclick="closeGovernment()"
+            style="background:#000;border:2px solid #ff4444;color:#ff4444;
+                   padding:8px 20px;cursor:pointer;font-family:monospace;font-size:1em;letter-spacing:2px;">
+            ✕ CLOSE
+        </button>
+    </div>
+    <div style="overflow-y:auto;flex:1;padding:30px 40px;">
+        
+        <!-- Overview Section -->
+        <div class="gov-section">
+            <h3 class="gov-section-title">📊 NATIONAL OVERVIEW</h3>
+            <div class="gov-info-grid">
+                <div class="gov-info-item">
+                    <span class="gov-label">💰 Treasury:</span>
+                    <span class="gov-value">${formatMoney(gameState.treasury)}</span>
+                </div>
+                <div class="gov-info-item">
+                    <span class="gov-label">📈 GDP:</span>
+                    <span class="gov-value">${formatMoney(gameState.gdp)}</span>
+                </div>
+                <div class="gov-info-item">
+                    <span class="gov-label">🏆 World Rank:</span>
+                    <span class="gov-value">#${getCountryRank(gameState.selectedCountry?.name.common)}</span>
+                </div>
+                <div class="gov-info-item">
+                    <span class="gov-label">👥 Population:</span>
+                    <span class="gov-value">${gameState.selectedCountry?.population.toLocaleString()}</span>
+                </div>
+                <div class="gov-info-item">
+                    <span class="gov-label">😊 Happiness:</span>
+                    <span class="gov-value" style="color:${gameState.happiness >= 60 ? '#00ff41' : gameState.happiness >= 40 ? '#ffaa00' : '#ff4444'}">${gameState.happiness}%</span>
+                </div>
+                <div class="gov-info-item">
+                    <span class="gov-label">📅 Date:</span>
+                    <span class="gov-value">${gameState.gameDate.toLocaleDateString('en-US', {month: 'short', day: '2-digit', year: 'numeric'})}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resource Storage Overview -->
+        <div class="gov-section">
+            <h3 class="gov-section-title">📦 RESOURCE STORAGE</h3>
+            <div class="gov-info-grid">
+                <div class="gov-info-item">
+                    <span class="gov-label">Total Capacity:</span>
+                    <span class="gov-value">${formatTonnes(totalCapacity)}</span>
+                </div>
+                <div class="gov-info-item">
+                    <span class="gov-label">Total Used:</span>
+                    <span class="gov-value">${formatTonnes(totalUsed)}</span>
+                </div>
+                <div class="gov-info-item">
+                    <span class="gov-label">Utilization:</span>
+                    <span class="gov-value" style="color:${utilization > 80 ? '#ff8844' : '#00ff41'}">${utilization}%</span>
+                </div>
+            </div>
+            <div style="margin-top:15px;">
+                ${RESOURCE_CATEGORIES_TRADABLE.map(cat => {
+                    const cap = gameState.resourceCapacity[cat] || DEFAULT_CAPACITY;
+                    const used = getCategoryUsed(cat);
+                    const pct = ((used / cap) * 100).toFixed(1);
+                    return `
+                    <div style="margin-bottom:8px;">
+                        <div style="display:flex;justify-content:space-between;font-size:0.9em;margin-bottom:3px;">
+                            <span style="color:#aaa;">${cat}</span>
+                            <span style="color:#666;">${formatTonnes(used)} / ${formatTonnes(cap)} (${pct}%)</span>
+                        </div>
+                        <div style="background:#001100;height:8px;border-radius:4px;overflow:hidden;">
+                            <div style="background:#00ff41;height:100%;width:${pct}%;transition:width 0.3s;"></div>
+                        </div>
+                    </div>`;
+                }).join('')}
+            </div>
+        </div>
+
+        <!-- Diplomatic Relations -->
+        <div class="gov-section">
+            <h3 class="gov-section-title">🌍 DIPLOMATIC RELATIONS</h3>
+            <div class="gov-info-grid">
+                <div class="gov-info-item">
+                    <span class="gov-label">🤝 Allies:</span>
+                    <span class="gov-value">${allies.length}</span>
+                </div>
+                <div class="gov-info-item">
+                    <span class="gov-label">💢 Enemies:</span>
+                    <span class="gov-value" style="color:${enemies.length > 0 ? '#ff8844' : '#00ff41'}">${enemies.length}</span>
+                </div>
+                <div class="gov-info-item">
+                    <span class="gov-label">⚔️ Wars:</span>
+                    <span class="gov-value" style="color:${atWar > 0 ? '#ff0000' : '#00ff41'}">${atWar}</span>
+                </div>
+            </div>
+            ${atWar > 0 ? `
+                <div style="margin-top:15px;padding:12px;background:#200000;border:1px solid #ff0000;border-radius:4px;">
+                    <div style="color:#ff4444;font-weight:bold;margin-bottom:8px;">⚔️ ACTIVE CONFLICTS:</div>
+                    ${gameState.warWith.map(c => `<div style="color:#ff8844;font-size:0.9em;">• ${c}</div>`).join('')}
+                </div>
+            ` : ''}
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="gov-section">
+            <h3 class="gov-section-title">⚡ QUICK ACTIONS</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <button onclick="saveAndExit()" class="gov-action-btn" style="border-color:#00ddff;color:#00ddff;">
+                    💾 SAVE & EXIT
+                </button>
+                <button onclick="closeGovernment();openTradeWindow('buy')" class="gov-action-btn" style="border-color:#00ddff;color:#00ddff;">
+                    🛒 BUY RESOURCES
+                </button>
+                <button onclick="closeGovernment();openTradeWindow('sell')" class="gov-action-btn" style="border-color:#00ff41;color:#00ff41;">
+                    💰 SELL RESOURCES
+                </button>
+                <button onclick="closeGovernment();openBuildService()" class="gov-action-btn" style="border-color:#ffaa00;color:#ffaa00;">
+                    🏗️ BUILD SERVICE
+                </button>
+            </div>
+        </div>
+
+        <div style="margin-top:30px;padding:20px;background:#001100;border:1px solid #003300;border-radius:6px;text-align:center;">
+            <p style="color:#666;font-size:0.9em;margin:0;">
+                💡 More government features coming in <b style="color:#00ff41;">v1.2.0</b>: Tax policies, budget allocation, social programs, and more!
+            </p>
+        </div>
+    </div>`;
+
+    document.body.appendChild(overlay);
+    injectGovernmentCSS();
+}
+
+function injectGovernmentCSS() {
+    if (document.getElementById('gov-css')) return;
+    const s = document.createElement('style');
+    s.id = 'gov-css';
+    s.textContent = `
+    .gov-section {
+        margin-bottom: 30px;
+        padding: 20px;
+        background: #000d00;
+        border: 1px solid #003300;
+        border-radius: 8px;
+    }
+    .gov-section-title {
+        color: #00dd99;
+        font-size: 1.3em;
+        margin: 0 0 18px 0;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #003300;
+    }
+    .gov-info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 12px;
+    }
+    .gov-info-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 14px;
+        background: #000000;
+        border: 1px solid #002200;
+        border-radius: 4px;
+    }
+    .gov-label {
+        color: #888;
+        font-size: 0.9em;
+    }
+    .gov-value {
+        color: #00ff41;
+        font-weight: bold;
+        font-size: 1em;
+    }
+    .gov-action-btn {
+        background: #000;
+        border: 2px solid;
+        padding: 12px 20px;
+        cursor: pointer;
+        font-family: monospace;
+        font-size: 1em;
+        font-weight: bold;
+        letter-spacing: 1px;
+        transition: all 0.2s;
+    }
+    .gov-action-btn:hover {
+        filter: brightness(1.4);
+        transform: translateY(-2px);
+    }
+    `;
+    document.head.appendChild(s);
+}
+
+window.closeGovernment = () => {
+    const el = document.getElementById('government-overlay');
+    if (el) el.remove();
+};
 
 // ============================================================
 // TRADE WINDOW (BUY & SELL)
@@ -1525,6 +1817,7 @@ const changelogVersions = [
         version: "v1.1.0 alpha - 1st Major Update",
         changes: [
             "💰 Added buying & selling resources features",
+            "➖ Fixing negative resources issue",
             "More coming soon in future updates!"
         ]
     },
